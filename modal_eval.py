@@ -35,8 +35,8 @@ def eval_checkpoint(checkpoint_path: str, n_problems: int = 100):
         m = re.search(r'\\boxed\{(.+?)\}', text)
         return m.group(1).strip() if m else None
 
-    ds   = load_dataset("lighteval/MATH", split="test")
-    hard = [x for x in ds if x["level"] == "Level 5"][:n_problems]
+    ds   = load_dataset("lighteval/MATH-Hard", split="test")
+    hard = list(ds)[:n_problems]
 
     llm    = LLM(model=checkpoint_path, max_model_len=1024)
     params = SamplingParams(temperature=0.0, max_tokens=400)

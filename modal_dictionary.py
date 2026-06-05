@@ -41,8 +41,8 @@ def build_dictionary(n_atoms: int = 256, n_steps_sample: int = 10_000):
         return [s.strip() for s in steps if len(s.strip()) > 20]
 
     # Load hard MATH problems
-    ds = load_dataset("lighteval/MATH", split="train")
-    hard = [x for x in ds if x["level"] in ("Level 4", "Level 5")]
+    ds = load_dataset("lighteval/MATH-Hard", split="train")
+    hard = list(ds)
 
     all_steps = []
     for ex in hard:
