@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+*.npy
+*.pt
+.env
+wandb/
+checkpoints/
