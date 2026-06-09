@@ -1,12 +1,12 @@
 # PGR — Pursuit-Graded Reward
 
-> Dense per-step RL reward for reasoning models using Orthogonal Matching Pursuit — no verifier required.
+> Dense per-step RL reward for reasoning models using Orthogonal Matching Pursuit (no verifier required).
 
 ---
 
 ## The Problem
 
-Binary GRPO gives zero gradient when every rollout fails. On hard problems, this happens constantly and the model generates hundreds of reasoning tokens and learns nothing.
+Binary GRPO gives zero gradient when every rollout fails. On hard problems, this happens constantly, and the model generates hundreds of reasoning tokens and learns nothing.
 
 ```
 Binary GRPO on Level 5 MATH (Qwen2.5-3B, 200 steps)
