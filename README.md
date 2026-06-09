@@ -150,5 +150,3 @@ Oracle-free mode (no verifier): set `terminal = 0`, train purely on step rewards
 | `modal_eval.py` | Eval checkpoints on MATH-Hard test set |
 
 ---
-
-*Ajinkya Kiran Mulay · Research Scientist, Meta · [thepursuits.xyz](https://thepursuits.xyz)*
