@@ -165,3 +165,15 @@ Oracle-free mode (no verifier): set `terminal = 0`, train purely on step rewards
 | `modal_smoke_test.py` | 5-check end-to-end pipeline test |
 | `modal_train.py` | PGR or binary GRPO training, with dictionary drift |
 | `modal_eval.py` | Eval checkpoints on MATH-Hard test set |
+
+---
+
+## Compute Request (Prime Intellect)
+
+| Phase | Hardware | Node-days |
+|---|---|---|
+| Dictionary learning, multi-domain | 4× A100 80GB | 35 |
+| PGR training vs baselines (MATH, AIME) | 8× H100 SXM | 60 |
+| Science domain runs (GPQA, SciBench) | 8× H100 SXM | 50 |
+| Ablations (τ, drift, oracle-free) | 4× H100 | 40 |
+| **Total** | **~185 H100-equivalent node-days** | **185** |
