@@ -69,13 +69,30 @@ Replace the binary terminal reward with a dense, per-step quality score built fr
 
 ## Results
 
-Empirical comparison on **Qwen2.5-3B-Instruct**, **MATH-Hard Level 5**, **200 training steps**.
+Empirical comparison on **Qwen2.5-3B-Instruct**, **MATH-Hard Level 5**, **200 training steps**, A100-80GB.
+
+### Step-by-step dead zone
+
+| Step | Binary GRPO `grad_norm` | PGR `grad_norm` |
+|------|-------------------------|-----------------|
+| 10   | 0.000                   | 8.25            |
+| 20   | 6.125 (lucky spike)     | 9.56            |
+| 30   | 0.038                   | 6.97            |
+| 50   | 0.043                   | 8.50            |
+| 80   | 0.041                   | 9.81            |
+| 100  | 0.062 (reward_std=0.00) | 8.94 (reward_std=0.04) |
+
+Binary GRPO flatlines on hard problems. PGR holds steady gradient at every step.
+
+### Summary
 
 | Metric | Binary GRPO | PGR |
 |---|---|---|
 | Mean `grad_norm` | 0.00–0.09 (≈ 0 most steps) | **7–12 (every step)** |
-| `reward_std` at step 100 | 0.00 (dead zone) | **0.03–0.06** |
-| Gradient-carrying steps | ~40% (correct answers) | **100%** |
+| `reward_std` at step 100 | 0.00 (complete dead zone) | **0.03–0.06** |
+| Gradient-carrying steps | ~40% (lucky correct answers) | **100%** |
+| Dictionary drift steps collected | N/A | **172 steps, 1 refresh** |
+| Training-time rollout success rate | ~0% | **~8.5%** |
 | Requires verifier | Yes | **No** |
 | Minimum group size k | 8–16 | **4** |
 
@@ -150,3 +167,17 @@ Oracle-free mode (no verifier): set `terminal = 0`, train purely on step rewards
 | `modal_eval.py` | Eval checkpoints on MATH-Hard test set |
 
 ---
+
+## Compute Request (Prime Intellect)
+
+| Phase | Hardware | Node-days |
+|---|---|---|
+| Dictionary learning, multi-domain | 4× A100 80GB | 35 |
+| PGR training vs baselines (MATH, AIME) | 8× H100 SXM | 60 |
+| Science domain runs (GPQA, SciBench) | 8× H100 SXM | 50 |
+| Ablations (τ, drift, oracle-free) | 4× H100 | 40 |
+| **Total** | **~185 H100-equivalent node-days** | **185** |
+
+---
+
+*Ajinkya Kiran Mulay · Research Scientist, Meta · [thepursuits.xyz](https://thepursuits.xyz)*
