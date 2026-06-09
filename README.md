@@ -1,179 +1,98 @@
 # PGR — Pursuit-Graded Reward
 
-> Dense per-step RL reward for reasoning models using Orthogonal Matching Pursuit (no verifier required).
-
----
+Dense per-step RL reward for reasoning models, built from Orthogonal Matching Pursuit. Works without a verifier.
 
 ## The Problem
 
-Binary GRPO gives zero gradient when every rollout fails. On hard problems, this happens constantly, and the model generates hundreds of reasoning tokens and learns nothing.
-
-```
-Binary GRPO on Level 5 MATH (Qwen2.5-3B, 200 steps)
-
-grad_norm
-  10 │
-   8 │
-   6 │                     ▲ spike
-   4 │
-   2 │
-   0 │▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
-     └─────────────────────────────────────────▶ step
-      0                  100                 200
-
-PGR on the same problems
-
-grad_norm
-  10 │████████████████████████████████████████
-   8 │████████████████████████████████████████
-   6 │
-   4 │
-   2 │
-   0 │
-     └─────────────────────────────────────────▶ step
-      0                  100                 200
-```
-
----
+Binary GRPO gives zero gradient when every rollout fails. On Level 5 MATH problems with a sub-7B model, this happens on ~100% of groups. The model generates hundreds of reasoning tokens per rollout and learns nothing.
 
 ## The Idea
 
-Replace the binary terminal reward with a dense, per-step quality score built from sparse pursuit.
+Replace the binary terminal reward with a per-step quality score from sparse pursuit.
+
+1. Collect correct solution traces, encode each step as a vector.
+2. Fit a dictionary `D` of prototypical reasoning moves via dictionary learning.
+3. At training time, score each rollout step by its OMP reconstruction error against `D`.
+4. Combine with the terminal reward when available, or use the per-step signal alone (oracle-free).
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    PGR Pipeline                             │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  Gold solutions    ──▶  Encoder (22M)  ──▶  Step embeddings │
-│  (MATH, GPQA, ...)                                          │
-│                              │                              │
-│                              ▼                              │
-│                     Dictionary Learning                     │
-│                     D ∈ ℝ^{256×384}                        │
-│                     (reasoning moves)          │
-│                              │                              │
-│         ┌────────────────────┘                              │
-│         │          At training time                         │
-│         ▼                                                   │
-│  Rollout step  ──▶  OMP reconstruction  ──▶  recon_error   │
-│                                                             │
-│  step_reward = exp(−error / τ)          ──▶  [0, 1]        │
-│                                                             │
-│  total_reward = α × mean(step_rewards) + (1−α) × terminal  │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
+For each rollout step s_i:
+  e_i     = OMP_reconstruction_error(encode(s_i), D)
+  r_step  = exp(-e_i / tau)
+
+total_reward = alpha * mean(r_step) + (1 - alpha) * terminal
 ```
 
----
+Default: `alpha=0.5`, `tau=0.3`, `terminal in {0, 1}`. Oracle-free mode sets `terminal=0` and trains on step rewards alone.
 
 ## Results
 
-Empirical comparison on **Qwen2.5-3B-Instruct**, **MATH-Hard Level 5**, **200 training steps**, A100-80GB.
+Qwen2.5-3B-Instruct on MATH-Hard Level 5, 200 training steps, A100-80GB.
 
-### Step-by-step dead zone
+### grad_norm per step
 
-| Step | Binary GRPO `grad_norm` | PGR `grad_norm` |
-|------|-------------------------|-----------------|
-| 10   | 0.000                   | 8.25            |
-| 20   | 6.125 (lucky spike)     | 9.56            |
-| 30   | 0.038                   | 6.97            |
-| 50   | 0.043                   | 8.50            |
-| 80   | 0.041                   | 9.81            |
+| Step | Binary GRPO | PGR |
+|------|------|------|
+| 10   | 0.000                   | 8.25 |
+| 20   | 6.125 (spike)           | 9.56 |
+| 30   | 0.038                   | 6.97 |
+| 50   | 0.043                   | 8.50 |
+| 80   | 0.041                   | 9.81 |
 | 100  | 0.062 (reward_std=0.00) | 8.94 (reward_std=0.04) |
-
-Binary GRPO flatlines on hard problems. PGR holds steady gradient at every step.
 
 ### Summary
 
 | Metric | Binary GRPO | PGR |
 |---|---|---|
-| Mean `grad_norm` | 0.00–0.09 (≈ 0 most steps) | **7–12 (every step)** |
-| `reward_std` at step 100 | 0.00 (complete dead zone) | **0.03–0.06** |
-| Gradient-carrying steps | ~40% (lucky correct answers) | **100%** |
-| Dictionary drift steps collected | N/A | **172 steps, 1 refresh** |
-| Training-time rollout success rate | ~0% | **~8.5%** |
-| Requires verifier | Yes | **No** |
-| Minimum group size k | 8–16 | **4** |
-
-```
-                  ~100× higher gradient norm
-                  Binary ░░░░░░░░░░░░░░░░░░░░░░░░  ≈ 0.04
-                  PGR    ████████████████████████  ≈ 8.5
-```
-
----
+| Mean grad_norm | 0.00–0.09 | 7–12 |
+| reward_std at step 100 | 0.00 | 0.03–0.06 |
+| Groups with nonzero gradient | ~40% | 100% |
+| Dictionary drift collected | n/a | 172 steps |
+| Training-time rollout success | ~0% | ~8.5% |
+| Requires verifier | yes | no |
+| Minimum group size k | 8–16 | 4 |
 
 ## Dictionary Drift
 
-The dictionary updates during training using steps from correct rollouts:
+The dictionary updates online from steps in correct rollouts:
 
 ```
-initial_dict  ←  gold solutions (offline, once)
+initial D  =  fit(gold solution steps)
 
-every N steps:
-  if buffer has ≥ 50 new steps from correct rollouts:
-    dict ← refit(current_atoms, new_steps)   ← warm start, 100 iters
-    D[:] = new_atoms                          ← in-place, reward fn picks up immediately
+every N training steps:
+  if buffer has >= 50 new steps from correct rollouts:
+    D  =  refit(D, new_steps)   # warm-started, 100 iters
 ```
 
-Over 200 steps on Level 5 MATH: **172 steps collected**, dictionary refreshed once.
-
----
+Over 200 steps on Level 5 MATH: 172 steps collected, dictionary refreshed once.
 
 ## How to Run
 
 ```bash
-# 1. Build reasoning dictionary (once)
-modal run modal_dictionary.py
-
-# 2. Smoke test — verify pipeline end to end (~15 min, ~$1.50)
-modal run modal_smoke_test.py
-
-# 3. Train
-modal run --detach modal_train.py --mode pgr
-
-# 4. Eval
-modal run modal_eval.py
+modal run modal_dictionary.py                # build dictionary (once)
+modal run modal_smoke_test.py                # end-to-end pipeline check
+modal run --detach modal_train.py --mode pgr # train
+modal run modal_eval.py                      # eval
 ```
 
-See [WIKI.md](WIKI.md) for full run order, cost reference, and troubleshooting.
-
----
-
-## Reward Formula
-
-```
-For each rollout step s_i:
-  e_i  = OMP_reconstruction_error(embed(s_i), D)
-  r_i  = exp(−e_i / τ)              τ = temperature (default 0.3)
-
-total = α · mean(r_i) + (1−α) · terminal
-                                    α = 0.5, terminal ∈ {0, 1}
-```
-
-Oracle-free mode (no verifier): set `terminal = 0`, train purely on step rewards.
-
----
+See [WIKI.md](WIKI.md) for full run order, cost, and troubleshooting.
 
 ## Files
 
 | File | What it does |
 |---|---|
-| `pgr_reward.py` | Core `PGRReward` class — prime-rl compatible |
-| `modal_dictionary.py` | Offline dictionary learning from solution traces |
-| `modal_smoke_test.py` | 5-check end-to-end pipeline test |
-| `modal_train.py` | PGR or binary GRPO training, with dictionary drift |
-| `modal_eval.py` | Eval checkpoints on MATH-Hard test set |
-
----
+| `pgr_reward.py` | `PGRReward` class, prime-rl compatible |
+| `modal_dictionary.py` | Offline dictionary learning |
+| `modal_smoke_test.py` | 5-check pipeline test |
+| `modal_train.py` | PGR or binary GRPO training, with drift |
+| `modal_eval.py` | Eval checkpoints on MATH-Hard test |
 
 ## Compute Request (Prime Intellect)
 
 | Phase | Hardware | Node-days |
 |---|---|---|
-| Dictionary learning, multi-domain | 4× A100 80GB | 35 |
-| PGR training vs baselines (MATH, AIME) | 8× H100 SXM | 60 |
-| Science domain runs (GPQA, SciBench) | 8× H100 SXM | 50 |
-| Ablations (τ, drift, oracle-free) | 4× H100 | 40 |
-| **Total** | **~185 H100-equivalent node-days** | **185** |
+| Dictionary learning, multi-domain | 4x A100 80GB | 35 |
+| PGR vs baselines (MATH, AIME) | 8x H100 SXM | 60 |
+| Science domain runs (GPQA, SciBench) | 8x H100 SXM | 50 |
+| Ablations (tau, drift, oracle-free) | 4x H100 | 40 |
+| Total | ~185 H100-equivalent node-days | 185 |
