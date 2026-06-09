@@ -14,7 +14,7 @@ Binary GRPO on Level 5 MATH (Qwen2.5-3B, 200 steps)
 grad_norm
   10 │
    8 │
-   6 │                     ▲ lucky spike
+   6 │                     ▲ spike
    4 │
    2 │
    0 │▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
@@ -75,7 +75,7 @@ Empirical comparison on **Qwen2.5-3B-Instruct**, **MATH-Hard Level 5**, **200 tr
 |---|---|---|
 | Mean `grad_norm` | 0.00–0.09 (≈ 0 most steps) | **7–12 (every step)** |
 | `reward_std` at step 100 | 0.00 (dead zone) | **0.03–0.06** |
-| Gradient-carrying steps | ~40% (lucky correct answers) | **100%** |
+| Gradient-carrying steps | ~40% (correct answers) | **100%** |
 | Requires verifier | Yes | **No** |
 | Minimum group size k | 8–16 | **4** |
 
