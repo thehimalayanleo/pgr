@@ -31,7 +31,6 @@ image = (
 )
 
 volume = modal.Volume.from_name("pgr-artifacts")
-secret = modal.Secret.from_name("wandb-secret")  # modal secret create wandb-secret WANDB_API_KEY=...
 
 
 @app.function(
@@ -39,13 +38,13 @@ secret = modal.Secret.from_name("wandb-secret")  # modal secret create wandb-sec
     gpu="A100-80GB",
     timeout=10800,         # 3 hrs to be safe on A100
     volumes={"/artifacts": volume},
-    secrets=[secret],
 )
 def train(
     mode: str = "pgr",
     max_steps: int = 500,
     k: int = 4,
     alpha: float = 0.5,
+    seed: int = 42,
     model_id: str = "Qwen/Qwen2.5-3B-Instruct",
 ):
     import os, re, torch
@@ -58,8 +57,15 @@ def train(
 
     assert mode in ("pgr", "binary"), f"mode must be 'pgr' or 'binary', got '{mode}'"
 
-    os.environ["WANDB_PROJECT"] = "pgr-smoke"
-    print(f"\n=== Training mode: {mode.upper()} | steps: {max_steps} | k: {k} ===\n")
+    # Seed everything for reproducibility across seeds
+    import random
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+
+    print(f"\n=== Training mode: {mode.upper()} | steps: {max_steps} | k: {k} | seed: {seed} ===\n")
 
     # ── Load dictionary (built by modal_smoke_test or modal_dictionary) ───
     dict_path = "/artifacts/dictionary_atoms.npy"
@@ -136,7 +142,7 @@ def train(
     )
 
     # ── Training ──────────────────────────────────────────────────────────
-    out_dir = f"/artifacts/checkpoints/{mode}"
+    out_dir = f"/artifacts/checkpoints/{mode}_seed{seed}_steps{max_steps}"
     config = GRPOConfig(
         output_dir=out_dir,
         max_steps=max_steps,
@@ -145,13 +151,15 @@ def train(
         max_completion_length=512,
         learning_rate=1e-6,
         logging_steps=10,
-        save_steps=250,
-        report_to="wandb",
-        run_name=f"{mode}_{max_steps}steps_k{k}",
+        save_steps=25,                  # checkpoint every 25 steps for preemption resilience
+        save_total_limit=2,             # keep only the 2 most recent — saves volume space
+        report_to="none",
+        run_name=f"{mode}_steps{max_steps}_k{k}_seed{seed}",
         gradient_accumulation_steps=4,
         warmup_steps=20,
         bf16=True,
         dataloader_num_workers=0,
+        seed=seed,
     )
 
     trainer = GRPOTrainer(
@@ -161,13 +169,24 @@ def train(
         reward_funcs=[reward_fn],
         processing_class=tokenizer,
     )
-    trainer.train()
+
+    # Auto-resume from latest checkpoint if one exists in out_dir
+    resume = os.path.isdir(out_dir) and any(
+        d.startswith("checkpoint-") for d in os.listdir(out_dir)
+    )
+    if resume:
+        print(f"Resuming from latest checkpoint in {out_dir}")
+        trainer.train(resume_from_checkpoint=True)
+    else:
+        trainer.train()
+
     trainer.save_model(f"{out_dir}_final")
     volume.commit()
 
     result = {
         "mode": mode,
         "steps": max_steps,
+        "seed": seed,
         "checkpoint": f"{out_dir}_final",
     }
     print(f"\nDone: {result}")
@@ -175,13 +194,19 @@ def train(
 
 
 @app.local_entrypoint()
-def main(mode: str = "pgr", max_steps: int = 500, k: int = 4):
+def main(
+    mode: str = "pgr",
+    max_steps: int = 500,
+    k: int = 4,
+    seed: int = 42,
+):
     """
     Args:
       --mode      pgr or binary (default: pgr)
-      --max-steps number of training steps (default: 500)
+      --max-steps gradient steps (default: 500)
       --k         rollouts per group (default: 4)
+      --seed      random seed (default: 42)
     """
-    print(f"Launching {mode.upper()} training — {max_steps} steps, k={k}")
-    result = train.remote(mode=mode, max_steps=max_steps, k=k)
+    print(f"Launching {mode.upper()} | steps={max_steps} k={k} seed={seed}")
+    result = train.remote(mode=mode, max_steps=max_steps, k=k, seed=seed)
     print(result)
