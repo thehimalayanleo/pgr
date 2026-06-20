@@ -9,39 +9,25 @@ Cost:    ~$0.30
 """
 
 import modal
+from modal_config import image_encoder, volume, VOLUME_MOUNT, ENCODER_NAME, DATASET_NAME
 
 app = modal.App("pgr-dictionary")
 
-image = (
-    modal.Image.debian_slim(python_version="3.11")
-    .pip_install(
-        "torch", "sentence-transformers", "scikit-learn",
-        "datasets", "numpy", "huggingface_hub"
-    )
-)
-
-volume = modal.Volume.from_name("pgr-artifacts", create_if_missing=True)
-
 
 @app.function(
-    image=image,
+    image=image_encoder,
     gpu="A10G",
     timeout=3600,
-    volumes={"/artifacts": volume}
+    volumes=VOLUME_MOUNT,
 )
 def build_dictionary(n_atoms: int = 256, n_steps_sample: int = 10_000):
-    import re
     import numpy as np
     from datasets import load_dataset
     from sentence_transformers import SentenceTransformer
     from sklearn.decomposition import DictionaryLearning
+    from pgr_utils import segment_steps
 
-    def segment_steps(text):
-        steps = re.split(r'\n\n+|(?=Step \d+:)|(?=\d+\.)', text.strip())
-        return [s.strip() for s in steps if len(s.strip()) > 20]
-
-    # Load hard MATH problems
-    ds = load_dataset("lighteval/MATH-Hard", split="train")
+    ds = load_dataset(DATASET_NAME, split="train")
     hard = list(ds)
 
     all_steps = []
@@ -49,8 +35,7 @@ def build_dictionary(n_atoms: int = 256, n_steps_sample: int = 10_000):
         all_steps.extend(segment_steps(ex["solution"]))
     print(f"Total steps collected: {len(all_steps)}")
 
-    # Encode
-    encoder = SentenceTransformer("BAAI/bge-small-en-v1.5")
+    encoder = SentenceTransformer(ENCODER_NAME)
     embeddings = encoder.encode(
         all_steps,
         batch_size=512,

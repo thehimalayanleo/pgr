@@ -1,9 +1,7 @@
 # pgr_reward.py
 import numpy as np
-import re
-import torch
 from sentence_transformers import SentenceTransformer
-from sklearn.linear_model import orthogonal_mp
+from pgr_utils import segment_steps, omp_reconstruction_errors
 
 
 class PGRReward:
@@ -23,23 +21,11 @@ class PGRReward:
         self.tau = temperature
 
     def segment_steps(self, text: str) -> list[str]:
-        steps = re.split(r'\n\n+|(?=Step \d+:)|(?=\d+\.)', text.strip())
-        return [s.strip() for s in steps if len(s.strip()) > 20]
+        return segment_steps(text)
 
     def omp_error(self, embeddings: np.ndarray) -> np.ndarray:
         """Returns per-step reconstruction error via OMP."""
-        # embeddings: (n_steps, d)
-        # D.T: (d, k)
-        codes = orthogonal_mp(
-            self.D.T,           # dictionary: (d, k)
-            embeddings.T,       # signals: (d, n_steps)
-            n_nonzero_coefs=self.n_nonzero
-        )  # (k, n_steps)
-        reconstructed = self.D.T @ codes  # (d, n_steps)
-        errors = np.linalg.norm(
-            embeddings.T - reconstructed, axis=0
-        )  # (n_steps,)
-        return errors
+        return omp_reconstruction_errors(self.D, embeddings, n_nonzero=self.n_nonzero)
 
     def step_rewards(self, errors: np.ndarray) -> np.ndarray:
         """Convert reconstruction errors to [0, 1] rewards."""

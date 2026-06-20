@@ -22,13 +22,16 @@ REGRESSION GUARANTEE:
     GRPO trajectory-level advantage. See `validate_regression()`.
 """
 
-import re
 import numpy as np
 from transformers import PreTrainedTokenizer
+from pgr_utils import (
+    segment_steps as _segment_steps,
+    omp_reconstruction_errors,
+    extract_boxed_answer,
+)
 
 try:
     import torch
-    from sklearn.linear_model import orthogonal_mp
 except ImportError:
     pass
 
@@ -51,8 +54,7 @@ except (ImportError, RuntimeError):
 # ─────────────────────────────────────────────────────────────────────────
 
 def segment_steps(text: str) -> list[str]:
-    parts = re.split(r'\n\n+|(?=Step \d+:)', text.strip())
-    return [p.strip() for p in parts if len(p.strip()) > 20]
+    return _segment_steps(text)
 
 
 def step_token_spans(
@@ -123,32 +125,13 @@ def omp_step_rewards(
     """OMP reconstruction reward per step. Returns array shape (n_steps,)."""
     if not step_texts:
         return np.array([0.0])
-    emb   = encoder.encode(step_texts, normalize_embeddings=True, batch_size=64)
-    codes = orthogonal_mp(D.T, emb.T, n_nonzero_coefs=n_nonzero)
-    errs  = np.linalg.norm(emb.T - D.T @ codes, axis=0)
+    emb = encoder.encode(step_texts, normalize_embeddings=True, batch_size=64)
+    errs = omp_reconstruction_errors(D, emb, n_nonzero=n_nonzero)
     return np.exp(-errs / tau)
 
 
 def extract_answer(text: str) -> str | None:
-    idx = text.find("\\boxed{")
-    if idx == -1:
-        return None
-    i = idx + len("\\boxed{")
-    depth = 1
-    out = []
-    while i < len(text) and depth > 0:
-        c = text[i]
-        if c == "{":
-            depth += 1
-            out.append(c)
-        elif c == "}":
-            depth -= 1
-            if depth > 0:
-                out.append(c)
-        else:
-            out.append(c)
-        i += 1
-    return "".join(out).strip() if depth == 0 else None
+    return extract_boxed_answer(text)
 
 
 # ─────────────────────────────────────────────────────────────────────────

@@ -5,56 +5,24 @@ Incremental save per-problem so preemption-safe.
 """
 
 import modal
+from modal_config import image_inference, volume, VOLUME_MOUNT, DATASET_NAME
 
 app = modal.App("pgr-eval-all")
 
-image = (
-    modal.Image.debian_slim(python_version="3.11")
-    .pip_install(
-        "torch==2.4.0",
-        "transformers==4.46.2",
-        "vllm==0.6.3",
-        "datasets",
-        "numpy",
-    )
-)
-
-volume = modal.Volume.from_name("pgr-artifacts")
-
 
 @app.function(
-    image=image,
+    image=image_inference,
     gpu="A10G",
     timeout=2400,                # 40 min budget per checkpoint
-    volumes={"/artifacts": volume},
+    volumes=VOLUME_MOUNT,
 )
 def eval_checkpoint(checkpoint_path: str, n_problems: int = 100):
-    import re, json, os
+    import json, os
     from datasets import load_dataset
     from vllm import LLM, SamplingParams
+    from pgr_utils import extract_boxed_answer
 
-    def extract_answer(text):
-        idx = text.find("\\boxed{")
-        if idx == -1:
-            return None
-        i = idx + len("\\boxed{")
-        depth = 1
-        out = []
-        while i < len(text) and depth > 0:
-            c = text[i]
-            if c == "{":
-                depth += 1
-                out.append(c)
-            elif c == "}":
-                depth -= 1
-                if depth > 0:
-                    out.append(c)
-            else:
-                out.append(c)
-            i += 1
-        return "".join(out).strip() if depth == 0 else None
-
-    ds   = load_dataset("lighteval/MATH-Hard", split="test")
+    ds   = load_dataset(DATASET_NAME, split="test")
     hard = list(ds)[:n_problems]
 
     safe_label = checkpoint_path.replace("/", "_").replace(":", "_")
@@ -83,8 +51,8 @@ def eval_checkpoint(checkpoint_path: str, n_problems: int = 100):
         ex = hard[i]
         prompt = f"Solve step by step:\n{ex['problem']}\n\nSolution:"
         out    = llm.generate([prompt], params)[0].outputs[0].text
-        pred   = extract_answer(out)
-        gold   = extract_answer(ex["solution"])
+        pred   = extract_boxed_answer(out)
+        gold   = extract_boxed_answer(ex["solution"])
         if pred and gold and pred == gold:
             correct += 1
 
