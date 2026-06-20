@@ -16,25 +16,9 @@ the same rollout. Recovers the per-step information PGR computes.
 """
 
 import modal
+from modal_config import image_training, VOLUME_MOUNT
 
-app = modal.App("pgr-step-train")
-
-image = (
-    modal.Image.debian_slim(python_version="3.11")
-    .pip_install(
-        "torch==2.4.0",
-        "transformers==4.46.2",
-        "trl==0.14.0",
-        "datasets",
-        "accelerate==0.34.2",
-        "sentence-transformers",
-        "scikit-learn",
-        "numpy",
-        "peft",
-    )
-)
-
-volume = modal.Volume.from_name("pgr-artifacts")
+app = modal.App("pgr-step-train-sketch")
 
 
 # ─────────────────────────────────────────────────────────────────────────
@@ -144,10 +128,10 @@ FALLBACK if step-level doesn't ship by deadline:
 
 
 @app.function(
-    image=image,
+    image=image_training,
     gpu="H100",
     timeout=14400,
-    volumes={"/artifacts": volume},
+    volumes=VOLUME_MOUNT,
 )
 def train_step_pgr(
     max_steps: int = 300,

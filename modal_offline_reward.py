@@ -23,31 +23,27 @@ Cost:    ~$1.50
 """
 
 import modal
+from modal_config import volume, VOLUME_MOUNT, ENCODER_NAME, DATASET_NAME, base_image
 
 app = modal.App("pgr-offline-reward")
 
-image = (
-    modal.Image.debian_slim(python_version="3.11")
-    .pip_install(
-        "torch==2.4.0",
-        "vllm==0.6.3",          # pinned for transformers 4.46 compat
-        "transformers==4.46.2",
-        "datasets",
-        "sentence-transformers",
-        "scikit-learn",
-        "scipy",
-        "numpy",
-    )
+image = base_image.pip_install(
+    "torch==2.4.0",
+    "vllm==0.6.3",
+    "transformers==4.46.2",
+    "datasets",
+    "sentence-transformers",
+    "scikit-learn",
+    "scipy",
+    "numpy",
 )
-
-volume = modal.Volume.from_name("pgr-artifacts")
 
 
 @app.function(
     image=image,
     gpu="A100-80GB",
     timeout=3600,
-    volumes={"/artifacts": volume},
+    volumes=VOLUME_MOUNT,
 )
 def offline_reward_analysis(
     n_problems: int = 50,
@@ -56,37 +52,22 @@ def offline_reward_analysis(
     max_tokens: int = 512,
     model_id: str = "Qwen/Qwen2.5-3B-Instruct",
 ):
-    import os, re, json
+    import json
     import numpy as np
     from datasets import load_dataset
     from sentence_transformers import SentenceTransformer
-    from sklearn.linear_model import orthogonal_mp
     from scipy.stats import spearmanr
     from vllm import LLM, SamplingParams
+    from pgr_utils import segment_steps, omp_step_rewards, extract_boxed_answer
+    from modal_config import DICTIONARY_PATH
 
     # ── Load dictionary + encoder ───────────────────────────────────────
-    D = np.load("/artifacts/dictionary_atoms.npy")
+    D = np.load(DICTIONARY_PATH)
     print(f"Dictionary: {D.shape}")
-    encoder = SentenceTransformer("BAAI/bge-small-en-v1.5")
-
-    def seg(text):
-        parts = re.split(r'\n\n+|(?=Step \d+:)', text.strip())
-        return [p.strip() for p in parts if len(p.strip()) > 20]
-
-    def omp_per_step_rewards(steps, tau=0.3):
-        if not steps:
-            return np.array([0.0])
-        emb = encoder.encode(steps, normalize_embeddings=True, batch_size=64)
-        codes = orthogonal_mp(D.T, emb.T, n_nonzero_coefs=5)
-        errs = np.linalg.norm(emb.T - D.T @ codes, axis=0)
-        return np.exp(-errs / tau)
-
-    def extract_answer(text):
-        m = re.search(r'\\boxed\{(.+?)\}', text)
-        return m.group(1).strip() if m else None
+    encoder = SentenceTransformer(ENCODER_NAME)
 
     # ── Load problems ───────────────────────────────────────────────────
-    ds = load_dataset("lighteval/MATH-Hard", split="test")
+    ds = load_dataset(DATASET_NAME, split="test")
     problems = list(ds)[:n_problems]
     print(f"Loaded {len(problems)} problems")
 
@@ -108,17 +89,16 @@ def offline_reward_analysis(
     # ── Score every rollout with every reward function ──────────────────
     rows = []
     for ex, output in zip(problems, outputs):
-        gold = extract_answer(ex["solution"])
+        gold = extract_boxed_answer(ex["solution"])
         for rollout in output.outputs:
             text = rollout.text
-            pred = extract_answer(text)
+            pred = extract_boxed_answer(text)
             is_correct = int(pred is not None and gold is not None and pred == gold)
 
             # Confidence: mean log-prob of generated tokens
             if rollout.logprobs:
                 logprobs_per_tok = []
                 for tok_logprobs in rollout.logprobs:
-                    # vLLM logprobs is {tok_id: Logprob(...)} for top-k. Pick max
                     if tok_logprobs:
                         lp = max(lp.logprob for lp in tok_logprobs.values())
                         logprobs_per_tok.append(lp)
@@ -127,9 +107,9 @@ def offline_reward_analysis(
                 conf = 0.0
 
             # PGR per-step rewards
-            steps = seg(text)
-            step_rewards = omp_per_step_rewards(steps)
-            mean_step_reward = float(step_rewards.mean())
+            steps = segment_steps(text)
+            step_rewards_arr = omp_step_rewards(steps, encoder, D)
+            mean_step_reward = float(step_rewards_arr.mean())
 
             # Reward function values
             r_binary       = float(is_correct)
@@ -220,7 +200,4 @@ def offline_reward_analysis(
 def main(n_problems: int = 50, k_rollouts: int = 4):
     print(f"Launching offline reward analysis: {n_problems} problems × {k_rollouts} rollouts")
     results = offline_reward_analysis.remote(n_problems=n_problems, k_rollouts=k_rollouts)
-    print(json.dumps(results, indent=2) if False else results)
-
-
-import json
+    print(results)

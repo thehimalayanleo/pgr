@@ -13,28 +13,10 @@ Checks:
 """
 
 import modal
+from modal_config import image_training, volume, VOLUME_MOUNT, ENCODER_NAME, DICTIONARY_PATH, DATASET_NAME
 
 app = modal.App("pgr-smoke-test")
 
-image = (
-    modal.Image.debian_slim(python_version="3.11")
-    .pip_install(
-        "torch==2.4.0",
-        "transformers==4.46.2",
-        "trl==0.14.0",
-        "datasets",
-        "accelerate==0.34.2",
-        "sentence-transformers",
-        "scikit-learn",
-        "numpy",
-        "peft",
-    )
-)
-
-volume = modal.Volume.from_name("pgr-artifacts", create_if_missing=True)
-
-DICTIONARY_PATH = "/artifacts/dictionary_atoms.npy"
-ENCODER_NAME    = "BAAI/bge-small-en-v1.5"
 MODEL_ID        = "Qwen/Qwen2.5-0.5B-Instruct"
 N_ATOMS         = 64
 N_STEPS_SAMPLE  = 500
@@ -57,21 +39,21 @@ BAD_STEPS = [
 
 
 @app.function(
-    image=image,
+    image=image_training,
     gpu="A10G",
     timeout=1800,
-    volumes={"/artifacts": volume},
+    volumes=VOLUME_MOUNT,
 )
 def run_smoke_test():
-    import os, re, time, traceback
+    import os, time, traceback
     import numpy as np
     import torch
     from sentence_transformers import SentenceTransformer
     from sklearn.decomposition import DictionaryLearning
-    from sklearn.linear_model import orthogonal_mp
     from datasets import load_dataset
     from transformers import AutoTokenizer, AutoModelForCausalLM, TrainerCallback
     from trl import GRPOConfig, GRPOTrainer
+    from pgr_utils import segment_steps, omp_reconstruction_errors, extract_boxed_answer
 
     results = {}
     encoder = SentenceTransformer(ENCODER_NAME)
@@ -81,28 +63,18 @@ def run_smoke_test():
         print(f"  CHECK [{n}] {title}")
         print(f"{'='*55}")
 
-    def ok(msg):   print(f"  ✅  {msg}")
-    def fail(msg): print(f"  ❌  {msg}")
-
-    def seg(text):
-        parts = re.split(r'\n\n+|(?=Step \d+:)', text.strip())
-        return [p.strip() for p in parts if len(p.strip()) > 20]
-
-    def recon_errors(D, emb):
-        """OMP reconstruction error. D: (n_atoms, d), emb: (n_steps, d)"""
-        codes = orthogonal_mp(D.T, emb.T, n_nonzero_coefs=5)  # (n_atoms, n_steps)
-        residual = emb.T - D.T @ codes                          # (d, n_steps)
-        return np.linalg.norm(residual, axis=0)                 # (n_steps,)
+    def ok(msg):   print(f"  [PASS]  {msg}")
+    def fail(msg): print(f"  [FAIL]  {msg}")
 
     # ── [1] Dictionary ────────────────────────────────────────────────────
     header(1, "Dictionary build + load")
     D = None
     try:
         if not os.path.exists(DICTIONARY_PATH):
-            print("  No cached dictionary found — building from MATH train…")
-            ds   = load_dataset("lighteval/MATH-Hard", split="train")
+            print("  No cached dictionary found - building from MATH train...")
+            ds   = load_dataset(DATASET_NAME, split="train")
             hard = list(ds)[:200]
-            steps = [s for ex in hard for s in seg(ex["solution"])][:N_STEPS_SAMPLE]
+            steps = [s for ex in hard for s in segment_steps(ex["solution"])][:N_STEPS_SAMPLE]
 
             emb = encoder.encode(steps, normalize_embeddings=True, batch_size=256)
 
@@ -127,7 +99,7 @@ def run_smoke_test():
         assert D.shape[0] == N_ATOMS, f"Expected {N_ATOMS} atoms, got {D.shape[0]}"
         assert D.shape[1] > 0,        "Embedding dim is 0"
 
-        ok(f"Dictionary shape: {D.shape}  ({D.shape[0]} atoms × {D.shape[1]}d)")
+        ok(f"Dictionary shape: {D.shape}  ({D.shape[0]} atoms x {D.shape[1]}d)")
         results["check_1_dictionary"] = "PASS"
 
     except Exception as e:
@@ -135,7 +107,7 @@ def run_smoke_test():
         results["check_1_dictionary"] = f"FAIL: {e}"
 
     # ── [2] Encoder ───────────────────────────────────────────────────────
-    header(2, "Encoder — unit-normalized embeddings")
+    header(2, "Encoder - unit-normalized embeddings")
     try:
         emb   = encoder.encode(GOOD_STEPS, normalize_embeddings=True)
         norms = np.linalg.norm(emb, axis=1)
@@ -144,7 +116,7 @@ def run_smoke_test():
         assert emb.shape[0] == len(GOOD_STEPS),     f"Wrong number of rows: {emb.shape[0]}"
         assert np.allclose(norms, 1.0, atol=1e-4),  f"Embeddings not unit-norm: {norms}"
 
-        ok(f"Shape: {emb.shape},  norms all ≈ 1.0")
+        ok(f"Shape: {emb.shape},  norms all ~ 1.0")
         results["check_2_encoder"] = "PASS"
 
     except Exception as e:
@@ -152,15 +124,15 @@ def run_smoke_test():
         results["check_2_encoder"] = f"FAIL: {e}"
 
     # ── [3] OMP discriminability ──────────────────────────────────────────
-    header(3, "OMP error — correct steps reconstruct better than shuffled")
+    header(3, "OMP error - correct steps reconstruct better than shuffled")
     try:
-        assert D is not None, "Skipped — check 1 failed"
+        assert D is not None, "Skipped - check 1 failed"
 
         good_emb = encoder.encode(GOOD_STEPS, normalize_embeddings=True)
         bad_emb  = encoder.encode(BAD_STEPS,  normalize_embeddings=True)
 
-        good_err = recon_errors(D, good_emb)
-        bad_err  = recon_errors(D, bad_emb)
+        good_err = omp_reconstruction_errors(D, good_emb)
+        bad_err  = omp_reconstruction_errors(D, bad_emb)
 
         mean_good = float(good_err.mean())
         mean_bad  = float(bad_err.mean())
@@ -168,14 +140,14 @@ def run_smoke_test():
 
         print(f"  Correct step mean error:  {mean_good:.4f}")
         print(f"  Shuffled step mean error: {mean_bad:.4f}")
-        print(f"  Gap (bad − good):         {gap:.4f}")
+        print(f"  Gap (bad - good):         {gap:.4f}")
 
         assert gap > 0, (
             f"Shuffled steps should have HIGHER error than correct steps. "
             f"Got gap={gap:.4f}. Dictionary may be too small or encoder mismatch."
         )
 
-        ok(f"Gap = {gap:.4f}  (correct reconstructs better ✓)")
+        ok(f"Gap = {gap:.4f}  (correct reconstructs better)")
         results["check_3_omp"]  = "PASS"
         results["omp_gap"]      = round(gap, 4)
         results["mean_err_correct"]  = round(mean_good, 4)
@@ -186,16 +158,16 @@ def run_smoke_test():
         results["check_3_omp"] = f"FAIL: {e}"
 
     # ── [4] Reward function ───────────────────────────────────────────────
-    header(4, "PGR reward — output in [0,1], correct > incorrect")
+    header(4, "PGR reward - output in [0,1], correct > incorrect")
     try:
-        assert D is not None, "Skipped — check 1 failed"
+        assert D is not None, "Skipped - check 1 failed"
 
         def pgr_reward(completion, is_correct, alpha=0.5, tau=0.3):
-            steps = seg(completion)
+            steps = segment_steps(completion)
             if not steps:
                 return 0.0, []
             emb   = encoder.encode(steps, normalize_embeddings=True)
-            errs  = recon_errors(D, emb)
+            errs  = omp_reconstruction_errors(D, emb)
             sr    = np.exp(-errs / tau)
             term  = 1.0 if is_correct else 0.0
             total = alpha * float(sr.mean()) + (1 - alpha) * term
@@ -221,12 +193,12 @@ def run_smoke_test():
         results["check_4_reward"] = f"FAIL: {e}"
 
     # ── [5] Training loop ─────────────────────────────────────────────────
-    header(5, f"GRPO training loop — {TRAIN_STEPS} steps, no crash")
+    header(5, f"GRPO training loop - {TRAIN_STEPS} steps, no crash")
     try:
-        assert D is not None, "Skipped — check 1 failed"
+        assert D is not None, "Skipped - check 1 failed"
 
-        # Build dataset — keep only prompt + answer columns
-        ds   = load_dataset("lighteval/MATH-Hard", split="train")
+        # Build dataset - keep only prompt + answer columns
+        ds   = load_dataset(DATASET_NAME, split="train")
         hard = ds.select(range(min(60, len(ds))))
         hard = hard.map(
             lambda x: {
@@ -236,27 +208,21 @@ def run_smoke_test():
             remove_columns=hard.column_names,   # drop all original columns
         )
 
-        def extract_answer(text):
-            m = re.search(r'\\boxed\{(.+?)\}', text)
-            return m.group(1).strip() if m else None
-
         _D, _enc = D, encoder
 
-        # TRL 0.9.x calls: reward_func(completions, prompts=..., **other_cols)
-        # "answer" arrives via **kwargs; "prompts" is passed explicitly by TRL
         def reward_fn(completions, **kwargs):
             answer  = kwargs.get("answer", [""] * len(completions))
             rewards = []
             for completion, ans in zip(completions, answer):
-                steps = seg(completion)
+                steps = segment_steps(completion)
                 if not steps:
                     rewards.append(0.0)
                     continue
                 emb   = _enc.encode(steps, normalize_embeddings=True)
-                errs  = recon_errors(_D, emb)
+                errs  = omp_reconstruction_errors(_D, emb)
                 sr    = float(np.exp(-errs / 0.3).mean())
-                pred  = extract_answer(completion)
-                gold  = extract_answer(ans)
+                pred  = extract_boxed_answer(completion)
+                gold  = extract_boxed_answer(ans)
                 term  = 1.0 if (pred and gold and pred == gold) else 0.0
                 rewards.append(0.5 * sr + 0.5 * term)
             return rewards
@@ -310,10 +276,10 @@ def run_smoke_test():
         print(f"  Elapsed: {elapsed}s")
 
         # Smoke test: just need training to complete and log at least one loss
-        assert len(losses) >= 1, "No loss values logged — training may have crashed silently"
+        assert len(losses) >= 1, "No loss values logged - training may have crashed silently"
 
         first, last = losses[0], losses[-1]
-        ok(f"Completed in {elapsed}s.  Loss: {first:.4f} → {last:.4f}")
+        ok(f"Completed in {elapsed}s.  Loss: {first:.4f} -> {last:.4f}")
         results["check_5_training"] = "PASS"
         results["loss_first"]       = round(first, 4)
         results["loss_last"]        = round(last,  4)
@@ -331,18 +297,18 @@ def run_smoke_test():
     all_pass = True
     for k, v in results.items():
         if str(v).startswith("PASS"):
-            icon = "✅"
+            icon = "[PASS]"
         elif str(v).startswith("FAIL") or str(v).startswith("Skipped"):
-            icon = "❌"
+            icon = "[FAIL]"
             all_pass = False
         else:
-            icon = "📊"
+            icon = "[DATA]"
         print(f"  {icon}  {k}: {v}")
 
     verdict = (
-        "🟢 ALL CHECKS PASSED — ready to scale"
+        "ALL CHECKS PASSED - ready to scale"
         if all_pass else
-        "🔴 SOME CHECKS FAILED — fix before scaling"
+        "SOME CHECKS FAILED - fix before scaling"
     )
     print(f"\n  {verdict}")
     print(f"{'='*55}\n")

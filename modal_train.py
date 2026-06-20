@@ -10,34 +10,18 @@ GPU: A100-80GB (~$2.50/hr). Enough VRAM for 3B, ~1.5x slower than H100.
 """
 
 import modal
-import sys
+from modal_config import image_training, volume, VOLUME_MOUNT, ENCODER_NAME, DATASET_NAME, DICTIONARY_PATH
 
 app = modal.App("pgr-train")
 
-image = (
-    modal.Image.debian_slim(python_version="3.11")
-    .pip_install(
-        "torch==2.4.0",
-        "transformers==4.46.2",
-        "trl==0.14.0",
-        "datasets",
-        "accelerate==0.34.2",
-        "sentence-transformers",
-        "scikit-learn",
-        "numpy",
-        "wandb",
-        "peft",
-    )
-)
-
-volume = modal.Volume.from_name("pgr-artifacts")
+image = image_training.pip_install("wandb")
 
 
 @app.function(
     image=image,
     gpu="H100",            # ~2-3x faster than A100 for 3B GRPO, often less contested
     timeout=14400,         # 4 hrs — enough headroom for 500+ step runs even with checkpoint saves
-    volumes={"/artifacts": volume},
+    volumes=VOLUME_MOUNT,
 )
 def train(
     mode: str = "pgr",
@@ -47,56 +31,32 @@ def train(
     seed: int = 42,
     model_id: str = "Qwen/Qwen2.5-3B-Instruct",
 ):
-    import os, re, torch
+    import os, torch
     import numpy as np
     from datasets import load_dataset
     from transformers import AutoTokenizer, AutoModelForCausalLM
     from trl import GRPOConfig, GRPOTrainer
     from sentence_transformers import SentenceTransformer
-    from sklearn.linear_model import orthogonal_mp
+    from pgr_utils import segment_steps, omp_step_rewards, extract_boxed_answer, set_seed
 
     assert mode in ("pgr", "binary"), f"mode must be 'pgr' or 'binary', got '{mode}'"
 
-    # Seed everything for reproducibility across seeds
-    import random
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(seed)
+    set_seed(seed)
 
     print(f"\n=== Training mode: {mode.upper()} | steps: {max_steps} | k: {k} | seed: {seed} ===\n")
 
     # ── Load dictionary (built by modal_smoke_test or modal_dictionary) ───
-    dict_path = "/artifacts/dictionary_atoms.npy"
-    assert os.path.exists(dict_path), (
-        "Dictionary not found at /artifacts/dictionary_atoms.npy. "
+    assert os.path.exists(DICTIONARY_PATH), (
+        f"Dictionary not found at {DICTIONARY_PATH}. "
         "Run modal_smoke_test.py or modal_dictionary.py first."
     )
-    D = np.load(dict_path)
+    D = np.load(DICTIONARY_PATH)
     print(f"Loaded dictionary: {D.shape}")
 
-    encoder = SentenceTransformer("BAAI/bge-small-en-v1.5")
-
-    # ── Helpers ───────────────────────────────────────────────────────────
-    def seg(text):
-        parts = re.split(r'\n\n+|(?=Step \d+:)', text.strip())
-        return [p.strip() for p in parts if len(p.strip()) > 20]
-
-    def omp_rewards(steps, tau=0.3):
-        if not steps:
-            return np.array([0.0])
-        emb   = encoder.encode(steps, normalize_embeddings=True, batch_size=64)
-        codes = orthogonal_mp(D.T, emb.T, n_nonzero_coefs=5)
-        errs  = np.linalg.norm(emb.T - D.T @ codes, axis=0)
-        return np.exp(-errs / tau)
-
-    def extract_answer(text):
-        m = re.search(r'\\boxed\{(.+?)\}', text)
-        return m.group(1).strip() if m else None
+    encoder = SentenceTransformer(ENCODER_NAME)
 
     # ── Dataset ───────────────────────────────────────────────────────────
-    ds   = load_dataset("lighteval/MATH-Hard", split="train")
+    ds   = load_dataset(DATASET_NAME, split="train")
     hard = ds.map(
         lambda x: {
             "prompt": f"Solve step by step:\n{x['problem']}\n\nSolution:",
@@ -111,11 +71,11 @@ def train(
         answer = kwargs.get("answer", [""] * len(completions))
         rewards = []
         for completion, ans in zip(completions, answer):
-            steps   = seg(completion)
-            sr      = omp_rewards(steps)
+            steps   = segment_steps(completion)
+            sr      = omp_step_rewards(steps, encoder, D)
             mean_sr = float(sr.mean())
-            pred    = extract_answer(completion)
-            gold    = extract_answer(ans)
+            pred    = extract_boxed_answer(completion)
+            gold    = extract_boxed_answer(ans)
             term    = 1.0 if (pred and gold and pred == gold) else 0.0
             rewards.append(alpha * mean_sr + (1 - alpha) * term)
         return rewards
@@ -124,8 +84,8 @@ def train(
         answer = kwargs.get("answer", [""] * len(completions))
         rewards = []
         for completion, ans in zip(completions, answer):
-            pred = extract_answer(completion)
-            gold = extract_answer(ans)
+            pred = extract_boxed_answer(completion)
+            gold = extract_boxed_answer(ans)
             rewards.append(1.0 if (pred and gold and pred == gold) else 0.0)
         return rewards
 

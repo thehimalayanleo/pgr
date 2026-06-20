@@ -12,33 +12,18 @@ Output checkpoint: /artifacts/checkpoints/step_pgr_seed{seed}_steps{N}_final
 """
 
 import modal
+from modal_config import image_training, volume, VOLUME_MOUNT, ENCODER_NAME, DATASET_NAME, DICTIONARY_PATH
 
 app = modal.App("pgr-step-train")
 
-image = (
-    modal.Image.debian_slim(python_version="3.11")
-    .pip_install(
-        "torch==2.4.0",
-        "transformers==4.46.2",
-        "trl==0.14.0",
-        "datasets",
-        "accelerate==0.34.2",
-        "sentence-transformers",
-        "scikit-learn",
-        "numpy",
-        "peft",
-    )
-    .add_local_file("step_pgr_trainer.py", remote_path="/root/step_pgr_trainer.py")
-)
-
-volume = modal.Volume.from_name("pgr-artifacts")
+image = image_training.add_local_file("step_pgr_trainer.py", remote_path="/root/step_pgr_trainer.py")
 
 
 @app.function(
     image=image,
     gpu="H100",
     timeout=14400,
-    volumes={"/artifacts": volume},
+    volumes=VOLUME_MOUNT,
 )
 def train(
     max_steps: int = 100,
@@ -49,7 +34,7 @@ def train(
     step_advantage_mode: str = "pooled",
     model_id: str = "Qwen/Qwen2.5-3B-Instruct",
 ):
-    import os, sys, re, random
+    import os, sys
     import numpy as np
     import torch
 
@@ -60,26 +45,21 @@ def train(
     from transformers import AutoTokenizer, AutoModelForCausalLM
     from trl import GRPOConfig
     from sentence_transformers import SentenceTransformer
+    from pgr_utils import set_seed
 
-    # Seeding
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(seed)
+    set_seed(seed)
 
     print(f"\n=== STEP-LEVEL PGR | steps: {max_steps} | k: {k} | seed: {seed} "
           f"| alpha: {alpha} | mode: {step_advantage_mode} ===\n")
 
     # ── Load dictionary + encoder ────────────────────────────────────────
-    dict_path = "/artifacts/dictionary_atoms.npy"
-    assert os.path.exists(dict_path), "Dictionary not found — run modal_dictionary.py first"
-    D = np.load(dict_path)
+    assert os.path.exists(DICTIONARY_PATH), "Dictionary not found - run modal_dictionary.py first"
+    D = np.load(DICTIONARY_PATH)
     print(f"Dictionary: {D.shape}")
-    encoder = SentenceTransformer("BAAI/bge-small-en-v1.5")
+    encoder = SentenceTransformer(ENCODER_NAME)
 
     # ── Dataset (must include 'answer' so we can compute terminal reward) ──
-    ds   = load_dataset("lighteval/MATH-Hard", split="train")
+    ds   = load_dataset(DATASET_NAME, split="train")
     hard = ds.map(
         lambda x: {
             "prompt": f"Solve step by step:\n{x['problem']}\n\nSolution:",

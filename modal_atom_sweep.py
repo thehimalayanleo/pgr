@@ -13,44 +13,28 @@ Cost:    ~$0.40
 """
 
 import modal
+from modal_config import image_encoder, volume, VOLUME_MOUNT, DATASET_NAME
 
 app = modal.App("pgr-atom-sweep")
-
-image = (
-    modal.Image.debian_slim(python_version="3.11")
-    .pip_install(
-        "torch==2.4.0",
-        "sentence-transformers",
-        "scikit-learn",
-        "datasets",
-        "numpy",
-    )
-)
-
-volume = modal.Volume.from_name("pgr-artifacts")
 
 ATOM_COUNTS = [64, 128, 256, 512, 1024]
 N_PROBES    = 300   # number of (correct, shuffled) pairs to evaluate on
 
 
 @app.function(
-    image=image,
+    image=image_encoder,
     gpu="A10G",
     timeout=3600,
-    volumes={"/artifacts": volume},
+    volumes=VOLUME_MOUNT,
 )
 def atom_sweep(encoder_name: str = "BAAI/bge-small-en-v1.5"):
-    import os, re, json, random
+    import json, random
     import numpy as np
     from datasets import load_dataset
     from sentence_transformers import SentenceTransformer
     from sklearn.decomposition import DictionaryLearning
-    from sklearn.linear_model import orthogonal_mp
     from sklearn.metrics import roc_auc_score
-
-    def seg(text):
-        parts = re.split(r'\n\n+|(?=Step \d+:)', text.strip())
-        return [p.strip() for p in parts if len(p.strip()) > 20]
+    from pgr_utils import segment_steps, omp_reconstruction_errors
 
     def shuffle_words(step):
         words = step.split()
@@ -59,10 +43,10 @@ def atom_sweep(encoder_name: str = "BAAI/bge-small-en-v1.5"):
 
     # ── Load + encode corpus ─────────────────────────────────────────────
     print("Loading MATH-Hard train split…")
-    ds = load_dataset("lighteval/MATH-Hard", split="train")
+    ds = load_dataset(DATASET_NAME, split="train")
     all_steps = []
     for ex in ds:
-        all_steps.extend(seg(ex["solution"]))
+        all_steps.extend(segment_steps(ex["solution"]))
     print(f"Collected {len(all_steps)} reasoning steps")
 
     print(f"Loading encoder: {encoder_name}")
@@ -74,13 +58,13 @@ def atom_sweep(encoder_name: str = "BAAI/bge-small-en-v1.5"):
 
     # ── Build probe set from test split ──────────────────────────────────
     print("\nBuilding probe set from test split…")
-    test_ds = load_dataset("lighteval/MATH-Hard", split="test")
+    test_ds = load_dataset(DATASET_NAME, split="test")
     random.seed(42)
     np.random.seed(42)
 
     probe_correct, probe_shuffled = [], []
     for ex in test_ds:
-        steps = seg(ex["solution"])
+        steps = segment_steps(ex["solution"])
         for s in steps:
             probe_correct.append(s)
             probe_shuffled.append(shuffle_words(s))
@@ -92,12 +76,6 @@ def atom_sweep(encoder_name: str = "BAAI/bge-small-en-v1.5"):
     print(f"Probe set: {len(probe_correct)} correct, {len(probe_shuffled)} shuffled")
     emb_correct  = encoder.encode(probe_correct,  normalize_embeddings=True, batch_size=128)
     emb_shuffled = encoder.encode(probe_shuffled, normalize_embeddings=True, batch_size=128)
-
-    # ── Helper: OMP recon error against a given dictionary ───────────────
-    def recon_errors(D, emb, n_nonzero=5):
-        codes = orthogonal_mp(D.T, emb.T, n_nonzero_coefs=n_nonzero)
-        recon = D.T @ codes
-        return np.linalg.norm(emb.T - recon, axis=0)
 
     # ── Sweep over atom counts ───────────────────────────────────────────
     results = []
@@ -126,8 +104,8 @@ def atom_sweep(encoder_name: str = "BAAI/bge-small-en-v1.5"):
         dl.fit(X_train)
         D = dl.components_   # shape: (n_atoms, 384)
 
-        err_correct  = recon_errors(D, emb_correct,  n_nonzero=5)
-        err_shuffled = recon_errors(D, emb_shuffled, n_nonzero=5)
+        err_correct  = omp_reconstruction_errors(D, emb_correct,  n_nonzero=5)
+        err_shuffled = omp_reconstruction_errors(D, emb_shuffled, n_nonzero=5)
 
         mean_correct  = float(err_correct.mean())
         mean_shuffled = float(err_shuffled.mean())
@@ -169,14 +147,14 @@ def atom_sweep(encoder_name: str = "BAAI/bge-small-en-v1.5"):
     aurocs = [r["auroc"] for r in results]
 
     if all(gaps[i] >= gaps[i+1] for i in range(len(gaps)-1)):
-        print("  🟡 Gap monotonically decreasing → DICTIONARY OVERFITTING")
+        print("  Gap monotonically decreasing -> DICTIONARY OVERFITTING")
         print("     More atoms reduce discriminability. Use fewer atoms or sparser codes.")
     elif max(aurocs) - min(aurocs) < 0.02:
-        print("  🔴 AUROC flat across atom counts → ENCODER BOTTLENECK")
+        print("  AUROC flat across atom counts -> ENCODER BOTTLENECK")
         print("     bge-small can't separate good vs bad reasoning. Try bge-large.")
     else:
         best = max(results, key=lambda r: r["auroc"])
-        print(f"  🟢 Sweet spot found at {best['n_atoms']} atoms (AUROC={best['auroc']:.4f})")
+        print(f"  Sweet spot found at {best['n_atoms']} atoms (AUROC={best['auroc']:.4f})")
         print(f"     Goldilocks zone exists. Use {best['n_atoms']}-atom dictionary.")
 
     # Save results — one file per encoder
