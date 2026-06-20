@@ -74,7 +74,7 @@ def train(
     # ── Load dictionary + encoder ────────────────────────────────────────
     dict_path = "/artifacts/dictionary_atoms.npy"
     assert os.path.exists(dict_path), "Dictionary not found — run modal_dictionary.py first"
-    D = np.load(dict_path)
+    D = np.load(dict_path, allow_pickle=False)
     print(f"Dictionary: {D.shape}")
     encoder = SentenceTransformer("BAAI/bge-small-en-v1.5")
 

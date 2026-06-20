@@ -73,7 +73,7 @@ def train(
         "Dictionary not found at /artifacts/dictionary_atoms.npy. "
         "Run modal_smoke_test.py or modal_dictionary.py first."
     )
-    D = np.load(dict_path)
+    D = np.load(dict_path, allow_pickle=False)
     print(f"Loaded dictionary: {D.shape}")
 
     encoder = SentenceTransformer("BAAI/bge-small-en-v1.5")
@@ -92,8 +92,25 @@ def train(
         return np.exp(-errs / tau)
 
     def extract_answer(text):
-        m = re.search(r'\\boxed\{(.+?)\}', text)
-        return m.group(1).strip() if m else None
+        idx = text.find("\\boxed{")
+        if idx == -1:
+            return None
+        i = idx + len("\\boxed{")
+        depth = 1
+        out = []
+        while i < len(text) and depth > 0:
+            c = text[i]
+            if c == "{":
+                depth += 1
+                out.append(c)
+            elif c == "}":
+                depth -= 1
+                if depth > 0:
+                    out.append(c)
+            else:
+                out.append(c)
+            i += 1
+        return "".join(out).strip() if depth == 0 else None
 
     # ── Dataset ───────────────────────────────────────────────────────────
     ds   = load_dataset("lighteval/MATH-Hard", split="train")

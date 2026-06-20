@@ -16,7 +16,7 @@ class PGRReward:
         temperature: float = 0.3,  # controls sharpness of exp(-error/τ)
         device: str = "cuda"
     ):
-        self.D = np.load(dictionary_path)  # (k, d)
+        self.D = np.load(dictionary_path, allow_pickle=False)  # (k, d)
         self.encoder = SentenceTransformer(encoder_name, device=device)
         self.n_nonzero = n_nonzero
         self.alpha = alpha
