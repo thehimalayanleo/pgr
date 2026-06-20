@@ -35,8 +35,8 @@ volume = modal.Volume.from_name("pgr-artifacts")
 
 @app.function(
     image=image,
-    gpu="A100-80GB",
-    timeout=10800,         # 3 hrs to be safe on A100
+    gpu="H100",            # ~2-3x faster than A100 for 3B GRPO, often less contested
+    timeout=14400,         # 4 hrs — enough headroom for 500+ step runs even with checkpoint saves
     volumes={"/artifacts": volume},
 )
 def train(
@@ -142,7 +142,9 @@ def train(
     )
 
     # ── Training ──────────────────────────────────────────────────────────
-    out_dir = f"/artifacts/checkpoints/{mode}_seed{seed}_steps{max_steps}"
+    # Include alpha in dir name so different alpha runs don't overwrite
+    alpha_tag = "" if mode == "binary" or alpha == 0.5 else f"_alpha{alpha:.1f}".replace(".", "p")
+    out_dir = f"/artifacts/checkpoints/{mode}_seed{seed}_steps{max_steps}{alpha_tag}"
     config = GRPOConfig(
         output_dir=out_dir,
         max_steps=max_steps,
@@ -152,7 +154,7 @@ def train(
         learning_rate=1e-6,
         logging_steps=10,
         save_steps=25,                  # checkpoint every 25 steps for preemption resilience
-        save_total_limit=2,             # keep only the 2 most recent — saves volume space
+        save_total_limit=3,             # keep 3 most recent — headroom for longer runs
         report_to="none",
         run_name=f"{mode}_steps{max_steps}_k{k}_seed{seed}",
         gradient_accumulation_steps=4,
@@ -199,6 +201,7 @@ def main(
     max_steps: int = 500,
     k: int = 4,
     seed: int = 42,
+    alpha: float = 0.5,
 ):
     """
     Args:
@@ -207,6 +210,6 @@ def main(
       --k         rollouts per group (default: 4)
       --seed      random seed (default: 42)
     """
-    print(f"Launching {mode.upper()} | steps={max_steps} k={k} seed={seed}")
-    result = train.remote(mode=mode, max_steps=max_steps, k=k, seed=seed)
+    print(f"Launching {mode.upper()} | steps={max_steps} k={k} seed={seed} alpha={alpha}")
+    result = train.remote(mode=mode, max_steps=max_steps, k=k, seed=seed, alpha=alpha)
     print(result)
