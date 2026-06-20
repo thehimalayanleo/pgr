@@ -122,7 +122,7 @@ def run_smoke_test():
             volume.commit()
             print("  Dictionary built and committed to volume.")
 
-        D = np.load(DICTIONARY_PATH)
+        D = np.load(DICTIONARY_PATH, allow_pickle=False)
         assert D.ndim == 2,           f"Expected 2D array, got {D.ndim}D"
         assert D.shape[0] == N_ATOMS, f"Expected {N_ATOMS} atoms, got {D.shape[0]}"
         assert D.shape[1] > 0,        "Embedding dim is 0"
@@ -237,8 +237,25 @@ def run_smoke_test():
         )
 
         def extract_answer(text):
-            m = re.search(r'\\boxed\{(.+?)\}', text)
-            return m.group(1).strip() if m else None
+            idx = text.find("\\boxed{")
+            if idx == -1:
+                return None
+            i = idx + len("\\boxed{")
+            depth = 1
+            out = []
+            while i < len(text) and depth > 0:
+                c = text[i]
+                if c == "{":
+                    depth += 1
+                    out.append(c)
+                elif c == "}":
+                    depth -= 1
+                    if depth > 0:
+                        out.append(c)
+                else:
+                    out.append(c)
+                i += 1
+            return "".join(out).strip() if depth == 0 else None
 
         _D, _enc = D, encoder
 
