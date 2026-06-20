@@ -47,6 +47,11 @@ def build_dictionary(n_atoms: int = 256, n_steps_sample: int = 10_000):
     all_steps = []
     for ex in hard:
         all_steps.extend(segment_steps(ex["solution"]))
+    if not all_steps:
+        raise RuntimeError(
+            "No reasoning steps extracted from dataset. "
+            "Check that the dataset contains solutions with multi-step reasoning."
+        )
     print(f"Total steps collected: {len(all_steps)}")
 
     # Encode
@@ -60,8 +65,13 @@ def build_dictionary(n_atoms: int = 256, n_steps_sample: int = 10_000):
 
     # Sample and fit dictionary
     np.random.seed(42)
-    idx = np.random.choice(len(embeddings), size=n_steps_sample, replace=False)
-    X = embeddings[idx]
+    if len(embeddings) < n_steps_sample:
+        print(f"  Warning: only {len(embeddings)} embeddings available, "
+              f"using all instead of sampling {n_steps_sample}")
+        X = embeddings
+    else:
+        idx = np.random.choice(len(embeddings), size=n_steps_sample, replace=False)
+        X = embeddings[idx]
 
     dl = DictionaryLearning(
         n_components=n_atoms,

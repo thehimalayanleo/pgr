@@ -26,11 +26,8 @@ import re
 import numpy as np
 from transformers import PreTrainedTokenizer
 
-try:
-    import torch
-    from sklearn.linear_model import orthogonal_mp
-except ImportError:
-    pass
+import torch
+from sklearn.linear_model import orthogonal_mp
 
 try:
     from trl import GRPOTrainer
@@ -41,7 +38,7 @@ try:
     from trl.trainer.utils import pad
     from transformers import PreTrainedModel
     TRL_AVAILABLE = True
-except (ImportError, RuntimeError):
+except ImportError:
     GRPOTrainer = object
     TRL_AVAILABLE = False
 
@@ -76,7 +73,7 @@ def step_token_spans(
             add_special_tokens=False,
         )
         offsets = enc["offset_mapping"]
-    except Exception:
+    except (TypeError, NotImplementedError):
         offsets = None
 
     spans = []
@@ -227,6 +224,11 @@ class StepLevelGRPOTrainer(GRPOTrainer):
                          group's trajectory-mean reward as baseline.
         """
         n_rollouts = len(all_step_rewards)
+        if n_rollouts % num_generations != 0:
+            raise ValueError(
+                f"Number of rollouts ({n_rollouts}) is not divisible by "
+                f"num_generations ({num_generations})"
+            )
         groups = n_rollouts // num_generations
         out = [None] * n_rollouts
 

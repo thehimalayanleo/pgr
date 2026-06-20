@@ -65,7 +65,13 @@ def offline_reward_analysis(
     from vllm import LLM, SamplingParams
 
     # ── Load dictionary + encoder ───────────────────────────────────────
-    D = np.load("/artifacts/dictionary_atoms.npy")
+    dict_path = "/artifacts/dictionary_atoms.npy"
+    if not os.path.exists(dict_path):
+        raise FileNotFoundError(
+            f"Dictionary not found at {dict_path}. "
+            f"Run modal_dictionary.py or modal_smoke_test.py first."
+        )
+    D = np.load(dict_path)
     print(f"Dictionary: {D.shape}")
     encoder = SentenceTransformer("BAAI/bge-small-en-v1.5")
 
@@ -82,8 +88,25 @@ def offline_reward_analysis(
         return np.exp(-errs / tau)
 
     def extract_answer(text):
-        m = re.search(r'\\boxed\{(.+?)\}', text)
-        return m.group(1).strip() if m else None
+        idx = text.find("\\boxed{")
+        if idx == -1:
+            return None
+        i = idx + len("\\boxed{")
+        depth = 1
+        out = []
+        while i < len(text) and depth > 0:
+            c = text[i]
+            if c == "{":
+                depth += 1
+                out.append(c)
+            elif c == "}":
+                depth -= 1
+                if depth > 0:
+                    out.append(c)
+            else:
+                out.append(c)
+            i += 1
+        return "".join(out).strip() if depth == 0 else None
 
     # ── Load problems ───────────────────────────────────────────────────
     ds = load_dataset("lighteval/MATH-Hard", split="test")
@@ -220,7 +243,5 @@ def offline_reward_analysis(
 def main(n_problems: int = 50, k_rollouts: int = 4):
     print(f"Launching offline reward analysis: {n_problems} problems × {k_rollouts} rollouts")
     results = offline_reward_analysis.remote(n_problems=n_problems, k_rollouts=k_rollouts)
-    print(json.dumps(results, indent=2) if False else results)
-
-
-import json
+    import json
+    print(json.dumps(results, indent=2))

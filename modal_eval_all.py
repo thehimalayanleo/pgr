@@ -66,15 +66,18 @@ def eval_checkpoint(checkpoint_path: str, n_problems: int = 100):
     correct = 0
     if os.path.exists(result_path):
         try:
-            prev = json.loads(open(result_path).read())
+            with open(result_path) as f:
+                prev = json.loads(f.read())
             start = prev.get("total_attempted", 0)
             correct = prev.get("correct", 0)
             if start >= n_problems:
                 print(f"[ALREADY DONE] {checkpoint_path}")
                 return prev
             print(f"[RESUMING] {checkpoint_path} from problem {start}")
-        except Exception:
-            pass
+        except (json.JSONDecodeError, KeyError) as e:
+            print(f"[WARN] Corrupt resume file {result_path}, restarting: {e}")
+            start = 0
+            correct = 0
 
     llm    = LLM(model=checkpoint_path, max_model_len=2048)
     params = SamplingParams(temperature=0.7, top_p=0.95, max_tokens=1024, seed=42)
