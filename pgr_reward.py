@@ -16,7 +16,17 @@ class PGRReward:
         temperature: float = 0.3,  # controls sharpness of exp(-error/τ)
         device: str = "cuda"
     ):
-        self.D = np.load(dictionary_path)  # (k, d)
+        try:
+            self.D = np.load(dictionary_path)  # (k, d)
+        except FileNotFoundError:
+            raise FileNotFoundError(
+                f"Dictionary file not found at '{dictionary_path}'. "
+                f"Run modal_dictionary.py to build one first."
+            )
+        if self.D.ndim != 2:
+            raise ValueError(
+                f"Expected 2D dictionary array, got {self.D.ndim}D from '{dictionary_path}'"
+            )
         self.encoder = SentenceTransformer(encoder_name, device=device)
         self.n_nonzero = n_nonzero
         self.alpha = alpha
