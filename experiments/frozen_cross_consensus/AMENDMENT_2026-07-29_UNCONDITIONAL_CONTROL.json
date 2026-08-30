@@ -1,0 +1,37 @@
+{
+  "amendment_id": "FCE-2026-07-29-UNCONDITIONAL-CONTROL-006",
+  "timestamp": "2026-07-29T13:04:26-07:00",
+  "status_at_amendment": {
+    "online_train_bank_items": 280,
+    "online_train_bank_partial": true,
+    "online_train_bank_frozen_evidence_attached": false,
+    "base_heldout_evaluation_created": false,
+    "primary_online_training_started": false,
+    "primary_online_result_created": false,
+    "matched_control_training_started": false
+  },
+  "reason": "The first matched-control preregistration executed the control only if the primary FCE-versus-base gate passed. Because that gate and the attribution comparison use the same held-out prompts, conditional execution would select the attribution test using one of its inputs. Running both arms regardless of outcome removes that avoidable selective-inference concern.",
+  "change": {
+    "file": "run_fcc_online_gate.sh",
+    "old_sha256": "99da025889c0a70068d54c57b051b881c5a3977683e522ed8dd71779cef1c5ad",
+    "new_sha256": "87d969518fc5854914faab7c5ac69d3cadfb1a5a16c57e06e3bd788ab0196fba",
+    "details": "Always train and evaluate the trajectory-permuted matched control after the primary arm, whether the primary viability gate passes or fails."
+  },
+  "replaces": {
+    "file": "PREREGISTRATION_2026-07-29_MATCHED_CONTROL.json",
+    "field": "execution_condition.run_only_if_primary_fce_gate_passes",
+    "old_value": true,
+    "new_value": false
+  },
+  "frozen_unchanged": [
+    "primary method and gate",
+    "matched-control reward transformation",
+    "models",
+    "bank",
+    "training hyperparameters",
+    "evaluation prompts",
+    "bootstrap procedure",
+    "attribution gate"
+  ],
+  "scope": "Pre-outcome statistical-design correction made before the bank finalized and before either online arm or held-out evaluation began."
+}

@@ -1,0 +1,51 @@
+{
+  "amendment_id": "FCE-2026-07-30-026",
+  "created_at_local": "2026-07-30T01:13:10-07:00",
+  "scope": "matched-control recovery strategy only",
+  "trigger": {
+    "attempt": "checkpoint-200 resume with a required checkpoint-250 bit-for-bit replay",
+    "replay_report": "/home/ajinkya/pgr/checkpoints/fce_control_preboundary_replay_audit_REPLAY_FAILED_ARCHIVE_20260730_0109.json",
+    "training_archive": "/home/ajinkya/pgr/checkpoints/fce_control_trajectory_fce_permuted_seed42_steps1000_k4_REPLAY_FAILED_ARCHIVE_20260730_0109",
+    "invocation_archive": "/home/ajinkya/pgr/checkpoints/fce_control_live_invocation_REPLAY_FAILED_ARCHIVE_20260730_0109.json",
+    "training_log_archive": "/home/ajinkya/pgr/logs/fce_matched_control_train_REPLAY_FAILED_ARCHIVE_20260730_0109.log",
+    "supervisor_log_archive": "/home/ajinkya/pgr/logs/fce_gate_supervisor_REPLAY_FAILED_ARCHIVE_20260730_0109.log",
+    "reference_checkpoint": "/home/ajinkya/pgr/checkpoints/fce_control_trajectory_fce_permuted_seed42_steps1000_k4_INTERRUPTED_ARCHIVE_20260729_2258/checkpoint-250",
+    "replayed_checkpoint": "/home/ajinkya/pgr/checkpoints/fce_control_trajectory_fce_permuted_seed42_steps1000_k4_REPLAY_FAILED_ARCHIVE_20260730_0109/checkpoint-250",
+    "heldout_evaluation_performed": false,
+    "use_for_attribution": false
+  },
+  "replay_result": {
+    "passed": false,
+    "trainer_state_equal": false,
+    "model_weight_equal": false,
+    "streamed_optimizer_equal": false,
+    "scheduler_equal": true,
+    "rng_state_equal": false,
+    "immutable_metadata_equal": false,
+    "conclusion": "the checkpoint-200 continuation is not an exact continuation of the original seed-42 trajectory"
+  },
+  "decision": {
+    "checkpoint_resume_retracted": true,
+    "final_allowed_control": "one fresh uninterrupted run from step 0",
+    "resume_flag_allowed": false,
+    "restart_after_any_training_interruption_allowed": false,
+    "failed_replay_preserved_as_negative_audit_evidence": true
+  },
+  "coordination": {
+    "shared_gpu_owner_acknowledged_hold": true,
+    "reservation_mib": 6144,
+    "post_reservation_quiescence_seconds": 60,
+    "reservation_held_through_training_and_evaluation": true
+  },
+  "unchanged": [
+    "frozen FCE bank",
+    "uniform within-group reward permutation",
+    "base model",
+    "seed",
+    "training schedule",
+    "heldout evaluation set",
+    "paired attribution gate",
+    "unconditional-control requirement"
+  ],
+  "claim_boundary": "The failed replay and every earlier interrupted control contribute no heldout result. Only the fresh uninterrupted step-0 control may be used for attribution."
+}

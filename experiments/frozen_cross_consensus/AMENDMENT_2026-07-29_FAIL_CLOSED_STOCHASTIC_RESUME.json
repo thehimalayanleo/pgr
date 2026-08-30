@@ -1,0 +1,55 @@
+{
+  "amendment_id": "FCE-2026-07-29-FAIL-CLOSED-STOCHASTIC-RESUME-021",
+  "timestamp": "2026-07-29T21:08:30-07:00",
+  "status_at_amendment": {
+    "primary_online_training_steps": 1000,
+    "primary_online_result_created": true,
+    "primary_trained_minus_base": 0.218,
+    "exploratory_control_last_live_step": 738,
+    "exploratory_control_latest_certified_checkpoint": 700,
+    "matched_control_evaluation_created": false,
+    "matched_control_result_created": false
+  },
+  "finding": "Amendment 020 restored model, optimizer, scheduler, and RNG objects, but the replayed step-605 through step-635 metrics did not match the original segment. The cause is dataloader position: 895 accepted prompts with gradient accumulation 4 produce a partial 224th update per uninterrupted epoch, while Transformers' generic resume skip computes floor(895/4)=223 updates per epoch. At checkpoint 600, this shifts the resumed sampler by eight prompts after two epochs.",
+  "disposition": {
+    "checkpoint_archive": "checkpoints/fce_control_trajectory_fce_permuted_seed42_steps1000_k4_NONEXACT_RESUME_ARCHIVE_20260729_2108",
+    "log_archive": "logs/fce_matched_control_train_NONEXACT_RESUME_ARCHIVE_20260729_2108.log",
+    "use_for_attribution": false,
+    "heldout_evaluated": false,
+    "result_created": false,
+    "clean_preregistered_control_restart_step": 0
+  },
+  "change": {
+    "file": "run_fcc_online_gate.sh",
+    "old_sha256": "213deadc5e2c682c72c78eba444967e9f944df11cedce0e292edd6da2efa0044",
+    "new_sha256": "65a7730ee685cdce47a5d1afe33204a167ee2cd2a095320ab8708a35eba8458c",
+    "details": [
+      "Disable automatic resume for both preregistered stochastic training arms.",
+      "Fail closed if an incomplete training directory exists after a yield instead of silently changing the prompt trajectory.",
+      "Restart the matched permutation control from the base model at step 0 on the original clean output path.",
+      "Retain the streamed checkpoints for crash recovery research, but do not call their current dataloader continuation exact.",
+      "Preserve the already completed primary result and its original executed-source audit instead of overwriting provenance during the control-only restart."
+    ]
+  },
+  "validation": [
+    "Original and replayed metrics for steps 605 through 635 were compared directly and differed at every logging point.",
+    "Checkpoint epoch positions confirmed the eight-prompt offset predicted by floor-versus-partial-update accounting.",
+    "The exploratory control directory and log were moved intact to explicit NONEXACT_RESUME archives.",
+    "The preregistered control output path is absent and ready for a clean step-0 run.",
+    "The preserved primary result recomputes exactly from its original audit, model-weight hash, and executed trainer-source hash.",
+    "Bash syntax validation and the scheduler self-test passed."
+  ],
+  "claim_boundary": "The completed primary arm is unchanged. The archived resumed control is excluded from every held-out comparison and attribution claim. Only a new uninterrupted step-0 control may satisfy the preregistered matched-control gate.",
+  "frozen_unchanged": [
+    "method",
+    "bank",
+    "models",
+    "sampling seed",
+    "training hyperparameters",
+    "reward sources",
+    "reward permutation",
+    "held-out evaluation",
+    "statistical gates"
+  ],
+  "scope": "Pre-control-outcome correction. No control held-out examples had been generated or inspected when the non-exact segment was rejected."
+}

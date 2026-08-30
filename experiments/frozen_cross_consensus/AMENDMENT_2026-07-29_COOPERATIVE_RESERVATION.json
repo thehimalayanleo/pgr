@@ -1,0 +1,35 @@
+{
+  "amendment_id": "FCE-2026-07-29-COOPERATIVE-RESERVATION-012",
+  "timestamp": "2026-07-29T14:29:06-07:00",
+  "status_at_amendment": {
+    "online_train_bank_items": 483,
+    "online_train_bank_partial": true,
+    "primary_online_training_started": false,
+    "primary_online_result_created": false,
+    "matched_control_training_started": false
+  },
+  "reason": "semantic-maintrack introduced an explicit cooperative reservation protocol. Its scheduler recognizes active /home/ajinkya/pgr Python children, allocates a 5 GiB sleeping CUDA reservation, and waits for all PGR children to exit before launching the semantic measurement runner. PGR incorrectly classified the reservation itself as foreign work and yielded, defeating the intended handshake.",
+  "change": {
+    "file": "run_fcc_online_gate.sh",
+    "old_sha256": "a2c6caf6d1421f90a31f3a7b85b8eea8fbb7f0b8edb5d1eb0ff30ce6ff7c6984",
+    "new_sha256": "ae81ac637b2af571f772d308a335ebb97ffde542e7ef4d600a459c5058daee37",
+    "details": [
+      "Ignore only a process whose command line matches semantic-maintrack's Python environment, SEMANTIC_WALLCLOCK_RESERVATION_BYTES, and time.sleep(86400).",
+      "Continue treating semantic's actual run_5090_semantic_dose_wallclock.py process as foreign work.",
+      "Continue treating every unrelated CUDA process of at least 4 GiB as foreign work.",
+      "Retain the 24 GiB free-VRAM admission threshold; a 5 GiB reservation on the 31.36 GiB GPU satisfies it."
+    ]
+  },
+  "coordination_invariant": "When PGR is active, semantic's reservation may coexist but semantic's measurement runner waits. When semantic's runner is active, PGR waits. Neither measurement process is co-run with the other.",
+  "frozen_unchanged": [
+    "method",
+    "bank",
+    "models",
+    "training hyperparameters",
+    "reward sources",
+    "checkpoint semantics",
+    "evaluation",
+    "statistical gates"
+  ],
+  "scope": "Pre-outcome correction implementing the externally supplied cooperative scheduler contract without modifying or terminating semantic-maintrack."
+}

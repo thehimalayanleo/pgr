@@ -1,0 +1,81 @@
+{
+  "amendment_id": "FCE-2026-07-29-EXACT-OPTIMIZER-RESUME-004",
+  "timestamp": "2026-07-29T12:45:59-07:00",
+  "status_at_amendment": {
+    "smollm_selection_complete": true,
+    "qwen_selection_complete": true,
+    "online_train_bank_items": 280,
+    "online_train_bank_partial": true,
+    "online_train_bank_frozen_evidence_attached": false,
+    "online_training_output_directory_created": false,
+    "online_training_started": false,
+    "base_heldout_evaluation_created": false,
+    "trained_heldout_evaluation_created": false
+  },
+  "reason": "A final pre-training audit found that the prior crash-safe checkpoint amendment still reset Adam moments after an interruption. On a shared GPU that can yield repeatedly, interruption-dependent optimizer resets would be an avoidable confound. The box has 982 GiB free disk, so optimizer state can be preserved exactly without recreating the measured host-RAM spike from Transformers' monolithic serialization.",
+  "changes": [
+    {
+      "file": "local_fcc_train.py",
+      "old_sha256": "11e3b1e4737b6ae237165a53867a01ae5635ee43f27337b342601dc6712dfab0",
+      "new_sha256": "c1eaae201bb3c9bea855078a612e40d323b89d84019f61ad0a0d724818bb928d",
+      "details": [
+        "stream each parameter's optimizer state to disk separately so peak host RAM is bounded by one parameter state",
+        "atomically expose the completed optimizer-state directory and certify it with model, scheduler, RNG, and trainer global step",
+        "restore Adam options and moments with PyTorch-compatible step-tensor placement",
+        "reject incomplete or parameter-incompatible optimizer state"
+      ]
+    },
+    {
+      "file": "run_fcc_online_gate.sh",
+      "old_sha256": "617d292c3432a5ff05888b7e1070c1f810a892c36df89c3db1ff86f6995b9888",
+      "new_sha256": "4ba1117323dd583fb318f928297bc967da8e9f7657b61c55f78b3bca8942fcfd",
+      "details": [
+        "resume only from version-2 checkpoints that certify streamed optimizer state",
+        "refuse the earlier optimizer-reset checkpoint format",
+        "run a fail-closed bank audit before evaluation or training and a final artifact audit after analysis"
+      ]
+    },
+    {
+      "file": "audit_fce_online.py",
+      "old_sha256": null,
+      "new_sha256": "3ded56d53f930f6a8cb56e4d39714f9f020bfa9fbe2f6a49d9c35d067985de1f",
+      "details": [
+        "recompute every frozen evidence score from raw panels",
+        "verify exact dataset order, prompt hashes, panel seeds, panel lengths, gold/candidate exclusion, and train-heldout disjointness",
+        "recompute held-out correctness and paired-bootstrap statistics",
+        "inventory final model artifacts and executed source hashes"
+      ]
+    }
+  ],
+  "validation": {
+    "test": "test_resume_state.py",
+    "result": "pass",
+    "checks": [
+      "Adam moments and hyperparameters round-trip exactly",
+      "scheduler position and current learning rate round-trip exactly",
+      "the first optimizer update after resume is byte-identical to uninterrupted Adam",
+      "uncertified checkpoints are rejected",
+      "the online auditor accepts a valid synthetic bank and rejects candidate contamination"
+    ]
+  },
+  "frozen_unchanged": [
+    "method",
+    "models",
+    "datasets_and_splits",
+    "panel_size",
+    "candidate_size",
+    "seed",
+    "decoding",
+    "reward_construction",
+    "selection_metrics",
+    "viability_thresholds",
+    "training_steps",
+    "learning_rate",
+    "learning_rate_scheduler",
+    "number_of_generations",
+    "heldout_examples",
+    "bootstrap_draws",
+    "gold_separation"
+  ],
+  "scope": "Pre-outcome operational correction made before the online bank finalized and before any online evaluation or gradient update. It restores the originally intended uninterrupted optimization trajectory after voluntary yields; it cannot change the frozen reward construction or any already observed selection outcome."
+}

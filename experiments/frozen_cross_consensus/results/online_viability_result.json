@@ -1,0 +1,22 @@
+{
+  "method": "Frozen Cross-Evidence GRPO",
+  "n": 500,
+  "test_offset": 500,
+  "decoding": "greedy",
+  "base_accuracy": 0.296,
+  "trained_accuracy": 0.514,
+  "trained_minus_base": 0.218,
+  "gain_ci95": [
+    0.174,
+    0.262
+  ],
+  "p_gain_le_zero": 0.0,
+  "trained_only_correct": 132,
+  "base_only_correct": 23,
+  "viability_gate": {
+    "gain_at_least_minimum": true,
+    "minimum_gain": 0.03,
+    "paired_bootstrap_p_lt_0_05": true,
+    "passed": true
+  }
+}

@@ -1,98 +1,63 @@
-# PGR — Pursuit-Graded Reward
+# PGR research audit
 
-Dense per-step RL reward for reasoning models, built from Orthogonal Matching Pursuit. Works without a verifier.
+This repository tested whether sparse pursuit over frozen step embeddings could
+provide verifier-free rewards for reasoning-model RL.
 
-## The Problem
+## Final status
 
-Binary GRPO gives zero gradient when every rollout fails. On Level 5 MATH problems with a sub-7B model, this happens on ~100% of groups. The model generates hundreds of reasoning tokens per rollout and learns nothing.
+The original OMP reward hypothesis is **rejected in the tested setting**.
+Frozen-encoder OMP reconstruction scores did not grade GSM8K reasoning quality,
+and the apparent success-dictionary and contrastive results did not survive
+leak-free evaluation. A frozen-reference successor, RAPR, had modest correctness
+discrimination but failed its candidate-selection gate. We therefore do not claim
+that OMP rewards improve policy learning.
 
-## The Idea
+The complete decision record is in
+[`OMP_RL_REWARD_FINAL_AUDIT_2026-08-21.md`](OMP_RL_REWARD_FINAL_AUDIT_2026-08-21.md).
 
-Replace the binary terminal reward with a per-step quality score from sparse pursuit.
+## What survived
 
-1. Collect correct solution traces, encode each step as a vector.
-2. Fit a dictionary `D` of prototypical reasoning moves via dictionary learning.
-3. At training time, score each rollout step by its OMP reconstruction error against `D`.
-4. Combine with the terminal reward when available, or use the per-step signal alone (oracle-free).
-
-```
-For each rollout step s_i:
-  e_i     = OMP_reconstruction_error(encode(s_i), D)
-  r_step  = exp(-e_i / tau)
-
-total_reward = alpha * mean(r_step) + (1 - alpha) * terminal
-```
-
-Default: `alpha=0.5`, `tau=0.3`, `terminal in {0, 1}`. Oracle-free mode sets `terminal=0` and trains on step rewards alone.
-
-## Results
-
-Qwen2.5-3B-Instruct on MATH-Hard Level 5, 200 training steps, A100-80GB.
-
-### grad_norm per step
-
-| Step | Binary GRPO | PGR |
-|------|------|------|
-| 10   | 0.000                   | 8.25 |
-| 20   | 6.125 (spike)           | 9.56 |
-| 30   | 0.038                   | 6.97 |
-| 50   | 0.043                   | 8.50 |
-| 80   | 0.041                   | 9.81 |
-| 100  | 0.062 (reward_std=0.00) | 8.94 (reward_std=0.04) |
-
-### Summary
-
-| Metric | Binary GRPO | PGR |
+| Component | Result | Status |
 |---|---|---|
-| Mean grad_norm | 0.00–0.09 | 7–12 |
-| reward_std at step 100 | 0.00 | 0.03–0.06 |
-| Groups with nonzero gradient | ~40% | 100% |
-| Dictionary drift collected | n/a | 172 steps |
-| Training-time rollout success | ~0% | ~8.5% |
-| Requires verifier | yes | no |
-| Minimum group size k | 8–16 | 4 |
+| Single-step OMP residual | Spearman rho `0.022`; best-of-K `0.200` | Negative |
+| Prefix OMP, LOO likelihood, pair features | absolute Spearman rho at most `0.108` | Negative |
+| Success-dictionary OMP | Cross-fitted AUROC `0.426` | Retracted due to label leakage |
+| Contrastive step reward | Leave-one-out AUROC `0.443` | Retracted due to label leakage |
+| RAPR frozen-reference OMP | AUROC `0.748`, but selection `0.160` versus random `0.147`, CI `[-0.067, 0.093]` | Failed promotion |
+| Trainer reward plumbing | Reward-source and all-token advantage invariants pass | Engineering result only |
 
-## Dictionary Drift
+Nonzero gradients, reward variance, and completed optimizer steps show that a
+reward reaches the loss. They do not show that the reward points toward better
+answers.
 
-The dictionary updates online from steps in correct rollouts:
+## Separate positive result
 
-```
-initial D  =  fit(gold solution steps)
+Frozen Cross-Evidence GRPO, or FCE-GRPO, is a later verifier-free method in this
+repository. It uses immutable cross-panel answer evidence, not OMP or frozen
+embedding reconstruction. On the registered SmolLM2/GSM8K run, it improved
+held-out accuracy from `29.6%` to `51.4%`; an exact-reward-multiset permutation
+control reached `33.6%`. See
+[`experiments/frozen_cross_consensus/RESULTS_2026-07-29.md`](experiments/frozen_cross_consensus/RESULTS_2026-07-29.md).
 
-every N training steps:
-  if buffer has >= 50 new steps from correct rollouts:
-    D  =  refit(D, new_steps)   # warm-started, 100 iters
-```
+FCE-GRPO does not establish cross-model policy learning, non-numeric transfer,
+step-local credit, or superiority to gold GRPO.
 
-Over 200 steps on Level 5 MATH: 172 steps collected, dictionary refreshed once.
+## Reproduce the audits
 
-## How to Run
+The principal saved artifacts are:
+
+- `offline_test_pairwise_n50.json`
+- `loo_audit_results.json`
+- `experiments/reference_anchor/rapr_offline_results.json`
+- `experiments/reward_source_fix/AUDIT_2026-07-29.md`
+- `experiments/frozen_cross_consensus/RESULTS_2026-07-29.md`
+
+Run the trainer's deterministic plumbing checks with:
 
 ```bash
-modal run modal_dictionary.py                # build dictionary (once)
-modal run modal_smoke_test.py                # end-to-end pipeline check
-modal run --detach modal_train.py --mode pgr # train
-modal run modal_eval.py                      # eval
+python step_pgr_trainer.py
 ```
 
-See [WIKI.md](WIKI.md) for full run order, cost, and troubleshooting.
-
-## Files
-
-| File | What it does |
-|---|---|
-| `pgr_reward.py` | `PGRReward` class, prime-rl compatible |
-| `modal_dictionary.py` | Offline dictionary learning |
-| `modal_smoke_test.py` | 5-check pipeline test |
-| `modal_train.py` | PGR or binary GRPO training, with drift |
-| `modal_eval.py` | Eval checkpoints on MATH-Hard test |
-
-## Compute Request (Prime Intellect)
-
-| Phase | Hardware | Node-days |
-|---|---|---|
-| Dictionary learning, multi-domain | 4x A100 80GB | 35 |
-| PGR vs baselines (MATH, AIME) | 8x H100 SXM | 60 |
-| Science domain runs (GPQA, SciBench) | 8x H100 SXM | 50 |
-| Ablations (tau, drift, oracle-free) | 4x H100 | 40 |
-| Total | ~185 H100-equivalent node-days | 185 |
+The historical workshop draft is retained as `PAPER_DRAFT.md`, but it is marked
+superseded because its positive OMP and contrastive claims predate the leakage and
+reward-source audits.

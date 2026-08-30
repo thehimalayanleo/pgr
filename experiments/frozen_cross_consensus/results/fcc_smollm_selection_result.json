@@ -1,0 +1,32 @@
+{
+  "method": "Frozen Cross-Consensus GRPO",
+  "model": "HuggingFaceTB/SmolLM2-1.7B-Instruct",
+  "n": 500,
+  "panel_size": 12,
+  "candidate_panel_size": 4,
+  "target_coverage": 0.428,
+  "target_precision_when_accepted": 0.883177570093458,
+  "random_candidate_accuracy": 0.2605,
+  "fcc_pick_accuracy": 0.4105,
+  "oracle_candidate_accuracy": 0.55,
+  "fcc_minus_random": 0.14999999999999997,
+  "gain_ci95": [
+    0.1275,
+    0.173
+  ],
+  "p_gain_le_zero": 0.0,
+  "oracle_gain_captured": 0.5181347150259066,
+  "captured_ci95": [
+    0.45172413793103444,
+    0.5851979345955248
+  ],
+  "wrong_target_reinforcement_rate": 0.032,
+  "reinforcement_event_rate": 0.38,
+  "informative_group_rate": 0.33,
+  "wrong_given_reinforcement": 0.08421052631578947,
+  "viability_gate": {
+    "captures_at_least_70pct_oracle_gain": false,
+    "paired_bootstrap_p_lt_0_05": true,
+    "informative_group_rate_at_least_0_30": true
+  }
+}

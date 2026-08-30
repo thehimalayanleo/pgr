@@ -1,0 +1,34 @@
+{
+  "amendment_id": "FCE-2026-07-29-IMMEDIATE-ADMISSION-010",
+  "timestamp": "2026-07-29T13:41:32-07:00",
+  "status_at_amendment": {
+    "online_train_bank_items": 335,
+    "online_train_bank_partial": true,
+    "primary_online_training_started": false,
+    "primary_online_result_created": false,
+    "matched_control_training_started": false
+  },
+  "reason": "The four-sample 20-second admission gate remained starved. At 13:39:49 it observed a clean GPU, but a competing after-idle semantic guard launched before PGR's second sample. Since those guards reserve only by creating a CUDA process, any multi-sample pre-launch delay can lose every idle window.",
+  "change": {
+    "file": "run_fcc_online_gate.sh",
+    "old_sha256": "08368192424c87f7ead32a4fa7ec4c2b1bf29410813e73d308ce2ac25bae8226",
+    "new_sha256": "ff3e8a17e90c753d79cf798fca9e2b3402f736d74879305d0ec949d6070efb6d",
+    "details": "Launch after the first observation satisfying no foreign process, at least 18 GiB available host RAM, and at least 24 GiB free VRAM. Keep the active-child foreign-process check before every five-second sleep."
+  },
+  "observed_safety": {
+    "bank_advanced_before_change": "280 to 335 through multiple clean, atomic slices",
+    "foreign_arrival_behavior": "PGR yielded at the last completed five-item save; no concurrent measurement or corrupted bank",
+    "latest_bank_structure": "335 unique ordered items, each with 12+12 panels and no candidates or gold"
+  },
+  "frozen_unchanged": [
+    "method",
+    "bank generation",
+    "models",
+    "training hyperparameters",
+    "reward sources",
+    "checkpoint semantics",
+    "evaluation",
+    "statistical gates"
+  ],
+  "scope": "Pre-outcome starvation correction. It changes only idle-window acquisition; foreign work already resident still blocks launch, and foreign work arriving later still triggers a yield."
+}

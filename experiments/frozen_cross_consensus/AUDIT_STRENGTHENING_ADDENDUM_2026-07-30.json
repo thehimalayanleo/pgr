@@ -1,0 +1,27 @@
+{
+  "addendum_id": "FCE-2026-07-30-AUDIT-001",
+  "sealed_at_local": "2026-07-30T11:54:00-07:00",
+  "timing": "before any new replication, MATH-Hard, MMLU, Qwen policy, or matched-baseline outcome was available",
+  "scope": "audit bookkeeping only",
+  "experimental_changes": false,
+  "unchanged": [
+    "models",
+    "datasets and splits",
+    "training seeds",
+    "generation seeds",
+    "reward construction",
+    "training hyperparameters",
+    "evaluation decoding",
+    "statistical estimands",
+    "success thresholds",
+    "conditional domain-training policy"
+  ],
+  "strengthened_checks": [
+    "every audited evaluation must reference a complete on-disk model checkpoint",
+    "all eight SmolLM multi-seed FCE and permutation checkpoints must exist",
+    "Qwen base, FCE, and permutation evaluation artifacts are audited directly",
+    "matched gold and majority evaluation artifacts are audited directly",
+    "descriptive FCE-versus-gold comparison must reference complete model checkpoints"
+  ],
+  "rationale": "A numerical analysis file alone must not pass if its underlying policy artifact is missing."
+}

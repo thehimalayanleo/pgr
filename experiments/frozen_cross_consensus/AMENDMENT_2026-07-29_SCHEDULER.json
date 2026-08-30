@@ -1,0 +1,35 @@
+{
+  "amendment_id": "FCE-2026-07-29-SCHEDULER-001",
+  "timestamp": "2026-07-29T05:49:38-07:00",
+  "status_at_amendment": {
+    "model": "HuggingFaceTB/SmolLM2-1.7B-Instruct",
+    "bank_items": 110,
+    "bank_partial": true,
+    "gold_outcomes_inspected": false,
+    "selection_results_created": false
+  },
+  "reason": "The shared-GPU supervisor counts expected voluntary preemptions against a hard 30-attempt ceiling. Multiple legitimate after-idle GPU queues can therefore terminate a healthy, atomically resumable bank before 500 items.",
+  "change": {
+    "file": "run_fcc_selection_gate.sh",
+    "old_sha256": "d37038804772eec14f97b06d84f2f44d10490845d441513f511e1aa4abdf22a2",
+    "new_sha256": "fc92a86cae2308fe2707181d9ac3b7ac3a7e1815d98c4faddabc0cf19e4b1fad",
+    "old_retry_ceiling": 30,
+    "new_retry_ceiling": 1000
+  },
+  "frozen_unchanged": [
+    "method",
+    "models",
+    "dataset_split",
+    "prompt_count",
+    "panel_size",
+    "candidate_size",
+    "seed",
+    "decoding",
+    "canonicalization",
+    "reward_construction",
+    "selection_metrics",
+    "viability_thresholds",
+    "gold_separation"
+  ],
+  "scope": "Operational scheduling only. No generated record is changed or removed; generation resumes from the existing atomic bank."
+}

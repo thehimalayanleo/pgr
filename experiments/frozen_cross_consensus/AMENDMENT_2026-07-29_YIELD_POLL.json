@@ -1,0 +1,36 @@
+{
+  "amendment_id": "FCE-2026-07-29-YIELD-POLL-005",
+  "timestamp": "2026-07-29T13:02:39-07:00",
+  "status_at_amendment": {
+    "online_train_bank_items": 280,
+    "online_train_bank_partial": true,
+    "online_train_bank_frozen_evidence_attached": false,
+    "primary_online_training_started": false,
+    "primary_online_result_created": false,
+    "matched_control_training_started": false
+  },
+  "reason": "A foreign shared-GPU process previously grew to approximately 27 GiB between 30-second monitor polls and OOM-killed bank generation on an unsaved prompt. The bank recovered atomically, but the polling interval left an avoidable race that would be more costly during training.",
+  "change": {
+    "file": "run_fcc_online_gate.sh",
+    "old_sha256": "e37deba39fd03ad9babe0f09652a50775066fcefd7d93157a34c32f1cd4966a8",
+    "new_sha256": "99da025889c0a70068d54c57b051b881c5a3977683e522ed8dd71779cef1c5ad",
+    "details": "Reduce the active-child foreign-GPU polling interval from 30 seconds to 5 seconds. The two-check capacity admission protocol remains 60 seconds per check."
+  },
+  "frozen_unchanged": [
+    "method",
+    "reward construction",
+    "models",
+    "datasets and splits",
+    "bank contents",
+    "seed",
+    "training steps",
+    "learning rate",
+    "scheduler",
+    "optimizer",
+    "number of generations",
+    "evaluation",
+    "statistical gates",
+    "matched-control transformation"
+  ],
+  "scope": "Pre-outcome shared-resource safety correction. It changes only how quickly the supervisor yields to unrelated GPU work."
+}

@@ -1,0 +1,69 @@
+{
+  "timestamp": "2026-07-29T12:57:59-07:00",
+  "status_at_preregistration": {
+    "selection_results_complete": true,
+    "online_train_bank_items": 280,
+    "online_train_bank_partial": true,
+    "online_train_bank_frozen_evidence_attached": false,
+    "base_heldout_evaluation_created": false,
+    "primary_online_training_started": false,
+    "primary_online_result_created": false,
+    "matched_control_training_started": false
+  },
+  "reason": "Historical GSM8K experiments found that random rewards can sometimes move GRPO policies as much as gold. A primary FCE-versus-base gain would establish policy learning but would not by itself identify correct FCE trajectory assignment as the cause. This control preserves the exact reward multiset, scale, variance, and informative-group pattern seen by the optimizer while breaking only reward-to-trajectory alignment.",
+  "execution_condition": {
+    "run_only_if_primary_fce_gate_passes": true,
+    "primary_gate": {
+      "minimum_accuracy_gain_over_base": 0.03,
+      "paired_bootstrap_p_gain_le_zero_maximum_exclusive": 0.05
+    }
+  },
+  "matched_control": {
+    "name": "trajectory-permuted FCE",
+    "initial_model": "HuggingFaceTB/SmolLM2-1.7B-Instruct",
+    "training_bank": "same finalized gold-free FCE train[:1000] bank",
+    "steps": 1000,
+    "num_generations": 4,
+    "seed": 42,
+    "learning_rate": 0.00002,
+    "alpha": 0,
+    "terminal_spread": "constant",
+    "advantage_mode": "group_mean",
+    "transformation": "For each K=4 group, compute ordinary frozen FCE rewards, then cyclically shift the reward vector by a deterministic nonzero offset in {1,2,3}. The offset is SHA256-derived from run seed, optimizer global step, group index, and prompt hash.",
+    "preserved_exactly_per_group": [
+      "reward multiset",
+      "mean",
+      "standard deviation",
+      "number of nonzero rewards",
+      "continuous reward magnitudes",
+      "informative versus degenerate group status"
+    ],
+    "broken_by_design": [
+      "which generated trajectory receives each reward",
+      "alignment between extracted answer and frozen evidence"
+    ],
+    "gold_used_for_training": false
+  },
+  "evaluation": {
+    "split": "openai/gsm8k test",
+    "start": 500,
+    "n": 500,
+    "decoding": "greedy",
+    "paired_with_primary_fce": true,
+    "bootstrap_draws": 50000,
+    "bootstrap_seed": 20260730
+  },
+  "attribution_gate": {
+    "fce_minus_permuted_control_strictly_positive": true,
+    "paired_bootstrap_p_gain_le_zero_maximum_exclusive": 0.05,
+    "claim_if_passed": "The held-out gain depends on assigning frozen cross-evidence to the matching trajectories, not merely on GRPO receiving a reward vector with the same density and scale.",
+    "claim_if_failed": "FCE may still improve over base, but the online result does not identify correct cross-evidence assignment as the cause."
+  },
+  "source_sha256": {
+    "fcc_step_pgr_trainer.py": "ec39c39f49df5b3ebd73c27eeef65901155ac832e3b92e9f6ffa257223e2b725",
+    "local_fcc_train.py": "beabec661d2dc404158f3b56cd16ef65491b754c72d58f89a44ddffdb9b6a49b",
+    "run_fcc_online_gate.sh": "e37deba39fd03ad9babe0f09652a50775066fcefd7d93157a34c32f1cd4966a8",
+    "analyze_fce_control.py": "c8a873230a55075f52a710dd29eb75148dff28e6367630ee59f9c363513a88bf",
+    "audit_fce_online.py": "e919b9c10d17668161fd9e401ac4ca8eb0b2b63ca360bdc98063489d6683ab7e"
+  }
+}

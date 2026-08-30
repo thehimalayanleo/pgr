@@ -1,0 +1,1634 @@
+{
+  "method": "Reference-Anchored Pursuit Reward (RAPR)",
+  "scoring_uses_labels": false,
+  "formula": "(same_prompt_coverage - q90_cross_prompt_coverage) * frozen_bank_agreement_times_lexical_independence",
+  "config": {
+    "encoder": "BAAI/bge-small-en-v1.5",
+    "tau": 0.3,
+    "ngram": 3,
+    "null_quantile": 0.9,
+    "crossfit_bank_size": 2,
+    "n_rollouts": 150,
+    "n_problems": 50
+  },
+  "discrimination": {
+    "agreement": {
+      "n_defined": 150,
+      "auroc": 0.7279829545454546,
+      "spearman_rho": 0.2794008467855908
+    },
+    "indep_cov": {
+      "n_defined": 150,
+      "auroc": 0.6949573863636365,
+      "spearman_rho": 0.23892689234468742
+    },
+    "specificity": {
+      "n_defined": 150,
+      "auroc": 0.7137784090909092,
+      "spearman_rho": 0.2619926943378904
+    },
+    "anchor_stability": {
+      "n_defined": 150,
+      "auroc": 0.6321022727272727,
+      "spearman_rho": 0.16189581776361334
+    },
+    "rapr": {
+      "n_defined": 150,
+      "auroc": 0.7482244318181819,
+      "spearman_rho": 0.30420746402356375
+    }
+  },
+  "selection": {
+    "agreement": {
+      "random_pick_accuracy": 0.14666666666666667,
+      "method_pick_accuracy": 0.18,
+      "oracle_accuracy": 0.32,
+      "method_minus_random": 0.033333333333333326,
+      "gain_ci95": [
+        -0.04666666666666666,
+        0.1133333333333334
+      ],
+      "p_gain_le_zero": 0.21945,
+      "oracle_gain_captured": 0.19230769230769226,
+      "captured_ci95": [
+        -0.30434782608695654,
+        0.64
+      ]
+    },
+    "indep_cov": {
+      "random_pick_accuracy": 0.14666666666666667,
+      "method_pick_accuracy": 0.2,
+      "oracle_accuracy": 0.32,
+      "method_minus_random": 0.053333333333333344,
+      "gain_ci95": [
+        -0.026666666666666672,
+        0.13999999999999999
+      ],
+      "p_gain_le_zero": 0.10985,
+      "oracle_gain_captured": 0.30769230769230776,
+      "captured_ci95": [
+        -0.19999999999999984,
+        0.7391304347826088
+      ]
+    },
+    "specificity": {
+      "random_pick_accuracy": 0.14666666666666667,
+      "method_pick_accuracy": 0.18,
+      "oracle_accuracy": 0.32,
+      "method_minus_random": 0.033333333333333326,
+      "gain_ci95": [
+        -0.04666666666666665,
+        0.12
+      ],
+      "p_gain_le_zero": 0.215,
+      "oracle_gain_captured": 0.19230769230769226,
+      "captured_ci95": [
+        -0.3043478260869563,
+        0.6470588235294117
+      ]
+    },
+    "rapr": {
+      "random_pick_accuracy": 0.14666666666666667,
+      "method_pick_accuracy": 0.16,
+      "oracle_accuracy": 0.32,
+      "method_minus_random": 0.013333333333333336,
+      "gain_ci95": [
+        -0.06666666666666664,
+        0.09333333333333335
+      ],
+      "p_gain_le_zero": 0.38255,
+      "oracle_gain_captured": 0.07692307692307694,
+      "captured_ci95": [
+        -0.4117647058823527,
+        0.5263157894736843
+      ]
+    }
+  },
+  "abstention_gate": {
+    "groups_selected": 50,
+    "groups_total": 50,
+    "coverage": 1.0,
+    "pick_accuracy_when_selected": 0.16
+  },
+  "allwrong_audit": {
+    "allwrong_mean_top_rapr": 0.018553002475658397,
+    "hascorrect_mean_top_rapr": 0.025550959205969385,
+    "hascorrect_auroc": 0.6544117647058822
+  },
+  "attacks": {
+    "current_policy_exact_clone": {
+      "mean_reward_delta": -6.938893903907229e-20,
+      "max_abs_reward_delta": 3.469446951953614e-18,
+      "blocked_by_frozen_bank_invariant": true
+    },
+    "cross_problem_generic_medoid": {
+      "generic_rollout_index": 41,
+      "normal_mean_rapr": 0.01623167197899046,
+      "generic_mean_rapr": -0.00454408329557841,
+      "generic_minus_normal": -0.02077575527456887,
+      "blocked": true
+    }
+  },
+  "per_rollout": [
+    {
+      "problem_id": 0,
+      "is_correct_eval_only": false,
+      "null_q90": 0.11301109794194088,
+      "agreement": 0.18839511362563272,
+      "indep_cov": 0.17448666046386022,
+      "specificity": 0.07538401568369184,
+      "anchor_stability": 0.21420154933254076,
+      "rapr": 0.016147372954355345
+    },
+    {
+      "problem_id": 0,
+      "is_correct_eval_only": false,
+      "null_q90": 0.11234381765707178,
+      "agreement": 0.19566372930366338,
+      "indep_cov": 0.17545497210925123,
+      "specificity": 0.0833199116465916,
+      "anchor_stability": 0.16662772528601194,
+      "rapr": 0.013883407348703051
+    },
+    {
+      "problem_id": 0,
+      "is_correct_eval_only": false,
+      "null_q90": 0.09817393399590656,
+      "agreement": 0.2109039042866146,
+      "indep_cov": 0.1873229426111669,
+      "specificity": 0.11272997029070804,
+      "anchor_stability": 0.15643530056572563,
+      "rapr": 0.017634946785192233
+    },
+    {
+      "problem_id": 1,
+      "is_correct_eval_only": true,
+      "null_q90": 0.09532824442201918,
+      "agreement": 0.24031077892379105,
+      "indep_cov": 0.19175398181651263,
+      "specificity": 0.14498253450177187,
+      "anchor_stability": 0.20555141984483152,
+      "rapr": 0.029801365819541483
+    },
+    {
+      "problem_id": 1,
+      "is_correct_eval_only": false,
+      "null_q90": 0.0992462360474987,
+      "agreement": 0.23002743673697335,
+      "indep_cov": 0.20579407115311155,
+      "specificity": 0.13078120068947463,
+      "anchor_stability": 0.18935025365012415,
+      "rapr": 0.024763453523219812
+    },
+    {
+      "problem_id": 1,
+      "is_correct_eval_only": false,
+      "null_q90": 0.08886011108731427,
+      "agreement": 0.25567952446140174,
+      "indep_cov": 0.20786075256440853,
+      "specificity": 0.16681941337408746,
+      "anchor_stability": 0.21050713203907706,
+      "rapr": 0.035116676277820405
+    },
+    {
+      "problem_id": 2,
+      "is_correct_eval_only": false,
+      "null_q90": 0.12939839783517576,
+      "agreement": 0.2018246543945093,
+      "indep_cov": 0.18779405929723839,
+      "specificity": 0.07242625655933355,
+      "anchor_stability": 0.13578931080378415,
+      "rapr": 0.009834711462289952
+    },
+    {
+      "problem_id": 2,
+      "is_correct_eval_only": false,
+      "null_q90": 0.1191650584135848,
+      "agreement": 0.16321963085268398,
+      "indep_cov": 0.15239960949534692,
+      "specificity": 0.04405457243909919,
+      "anchor_stability": 0.14575968362837094,
+      "rapr": 0.0064213805411062475
+    },
+    {
+      "problem_id": 2,
+      "is_correct_eval_only": false,
+      "null_q90": 0.09594790191136626,
+      "agreement": 0.12998248467021034,
+      "indep_cov": 0.12395971264072678,
+      "specificity": 0.03403458275884408,
+      "anchor_stability": 0.18260438700115697,
+      "rapr": 0.006214864121518868
+    },
+    {
+      "problem_id": 3,
+      "is_correct_eval_only": false,
+      "null_q90": 0.11590318596931753,
+      "agreement": 0.16709567960043092,
+      "indep_cov": 0.15195110605534523,
+      "specificity": 0.05119249363111339,
+      "anchor_stability": 0.12999576619515457,
+      "rapr": 0.0066548074330171555
+    },
+    {
+      "problem_id": 3,
+      "is_correct_eval_only": true,
+      "null_q90": 0.10237588486046369,
+      "agreement": 0.12822982995865057,
+      "indep_cov": 0.11926861419588372,
+      "specificity": 0.02585394509818688,
+      "anchor_stability": 0.13503484830422782,
+      "rapr": 0.0034911835543994995
+    },
+    {
+      "problem_id": 3,
+      "is_correct_eval_only": false,
+      "null_q90": 0.09424697333016248,
+      "agreement": 0.13937821365562336,
+      "indep_cov": 0.13456903683943855,
+      "specificity": 0.045131240325460883,
+      "anchor_stability": 0.14075814259128505,
+      "rapr": 0.006352589561052777
+    },
+    {
+      "problem_id": 4,
+      "is_correct_eval_only": false,
+      "null_q90": 0.11265757368711223,
+      "agreement": 0.16661932990582362,
+      "indep_cov": 0.1585599420157685,
+      "specificity": 0.053961756218711396,
+      "anchor_stability": 0.15202024295778607,
+      "rapr": 0.00820327929079733
+    },
+    {
+      "problem_id": 4,
+      "is_correct_eval_only": false,
+      "null_q90": 0.11672612095175625,
+      "agreement": 0.15372970078788706,
+      "indep_cov": 0.14171615693510992,
+      "specificity": 0.03700357983613081,
+      "anchor_stability": 0.15184150184324952,
+      "rapr": 0.0056186791358946876
+    },
+    {
+      "problem_id": 4,
+      "is_correct_eval_only": false,
+      "null_q90": 0.11180956221286624,
+      "agreement": 0.1547997528831896,
+      "indep_cov": 0.1429532127236067,
+      "specificity": 0.04299019067032335,
+      "anchor_stability": 0.13936756687344953,
+      "rapr": 0.005991438273148636
+    },
+    {
+      "problem_id": 5,
+      "is_correct_eval_only": false,
+      "null_q90": 0.11319044222683983,
+      "agreement": 0.18694959825021765,
+      "indep_cov": 0.17437084289166033,
+      "specificity": 0.07375915602337782,
+      "anchor_stability": 0.1332404987541772,
+      "rapr": 0.009827706736242035
+    },
+    {
+      "problem_id": 5,
+      "is_correct_eval_only": false,
+      "null_q90": 0.11928063775180543,
+      "agreement": 0.13630646157328236,
+      "indep_cov": 0.13062478352591167,
+      "specificity": 0.017025823821476924,
+      "anchor_stability": 0.18982365204029966,
+      "rapr": 0.003231904056787481
+    },
+    {
+      "problem_id": 5,
+      "is_correct_eval_only": false,
+      "null_q90": 0.10939146648802305,
+      "agreement": 0.14876908727275293,
+      "indep_cov": 0.1366176536477755,
+      "specificity": 0.03937762078472988,
+      "anchor_stability": 0.1185491292708706,
+      "rapr": 0.004668182656788264
+    },
+    {
+      "problem_id": 6,
+      "is_correct_eval_only": false,
+      "null_q90": 0.09755119556551833,
+      "agreement": 0.20045985609165884,
+      "indep_cov": 0.17097575896819533,
+      "specificity": 0.1029086605261405,
+      "anchor_stability": 0.15560714502790057,
+      "rapr": 0.016013322863118132
+    },
+    {
+      "problem_id": 6,
+      "is_correct_eval_only": false,
+      "null_q90": 0.11524468640504028,
+      "agreement": 0.19206803771991973,
+      "indep_cov": 0.1762335527093129,
+      "specificity": 0.07682335131487945,
+      "anchor_stability": 0.19984050582493723,
+      "rapr": 0.015352417385932366
+    },
+    {
+      "problem_id": 6,
+      "is_correct_eval_only": false,
+      "null_q90": 0.12525434963873563,
+      "agreement": 0.2097235715384684,
+      "indep_cov": 0.17901285074637474,
+      "specificity": 0.08446922189973277,
+      "anchor_stability": 0.17077451157104523,
+      "rapr": 0.014425190112713102
+    },
+    {
+      "problem_id": 7,
+      "is_correct_eval_only": false,
+      "null_q90": 0.08806644115944154,
+      "agreement": 0.14332612099291875,
+      "indep_cov": 0.14241544057310596,
+      "specificity": 0.05525967983347721,
+      "anchor_stability": 0.10992734920781744,
+      "rapr": 0.006074550122166836
+    },
+    {
+      "problem_id": 7,
+      "is_correct_eval_only": false,
+      "null_q90": 0.09678108760442046,
+      "agreement": 0.10877847413197086,
+      "indep_cov": 0.10765910372212784,
+      "specificity": 0.011997386527550405,
+      "anchor_stability": 0.09007037724573705,
+      "rapr": 0.0010806091304993882
+    },
+    {
+      "problem_id": 7,
+      "is_correct_eval_only": false,
+      "null_q90": 0.09695802571118793,
+      "agreement": 0.09875462070098986,
+      "indep_cov": 0.09681400353231605,
+      "specificity": 0.0017965949898019334,
+      "anchor_stability": 0.14689082137399534,
+      "rapr": 0.0002639033137284108
+    },
+    {
+      "problem_id": 8,
+      "is_correct_eval_only": false,
+      "null_q90": 0.10073600746257297,
+      "agreement": 0.2036647150234469,
+      "indep_cov": 0.19003021033157497,
+      "specificity": 0.10292870756087394,
+      "anchor_stability": 0.17665381203777897,
+      "rapr": 0.018182748558750142
+    },
+    {
+      "problem_id": 8,
+      "is_correct_eval_only": false,
+      "null_q90": 0.10575079702558185,
+      "agreement": 0.20693321017543698,
+      "indep_cov": 0.19439355863601074,
+      "specificity": 0.10118241314985513,
+      "anchor_stability": 0.1713298452925437,
+      "rapr": 0.017335567191290917
+    },
+    {
+      "problem_id": 8,
+      "is_correct_eval_only": false,
+      "null_q90": 0.09499401584382747,
+      "agreement": 0.1767862102557357,
+      "indep_cov": 0.16177356972954066,
+      "specificity": 0.08179219441190824,
+      "anchor_stability": 0.19821368136680367,
+      "rapr": 0.01621233196145364
+    },
+    {
+      "problem_id": 9,
+      "is_correct_eval_only": false,
+      "null_q90": 0.10470003642385792,
+      "agreement": 0.24511945320074788,
+      "indep_cov": 0.21821133123448846,
+      "specificity": 0.14041941677688996,
+      "anchor_stability": 0.2643939120100308,
+      "rapr": 0.03712603892380889
+    },
+    {
+      "problem_id": 9,
+      "is_correct_eval_only": false,
+      "null_q90": 0.0961717118975662,
+      "agreement": 0.23344114453169262,
+      "indep_cov": 0.20052331751069893,
+      "specificity": 0.13726943263412644,
+      "anchor_stability": 0.18985353443678238,
+      "rapr": 0.026061086955720705
+    },
+    {
+      "problem_id": 9,
+      "is_correct_eval_only": false,
+      "null_q90": 0.09201802120522819,
+      "agreement": 0.25091977175864827,
+      "indep_cov": 0.2182123453854788,
+      "specificity": 0.1589017505534201,
+      "anchor_stability": 0.18269954768385302,
+      "rapr": 0.029031277952282292
+    },
+    {
+      "problem_id": 10,
+      "is_correct_eval_only": true,
+      "null_q90": 0.10315037115465246,
+      "agreement": 0.22415647462120042,
+      "indep_cov": 0.17310451807698152,
+      "specificity": 0.12100610346654796,
+      "anchor_stability": 0.19922613530691394,
+      "rapr": 0.02410757834218891
+    },
+    {
+      "problem_id": 10,
+      "is_correct_eval_only": false,
+      "null_q90": 0.10689615260925366,
+      "agreement": 0.25664513614673234,
+      "indep_cov": 0.20143236046049873,
+      "specificity": 0.14974898353747867,
+      "anchor_stability": 0.19603921753180728,
+      "rapr": 0.02935667355887081
+    },
+    {
+      "problem_id": 10,
+      "is_correct_eval_only": true,
+      "null_q90": 0.09936360593554794,
+      "agreement": 0.27280388787419274,
+      "indep_cov": 0.21011011589204837,
+      "specificity": 0.1734402819386448,
+      "anchor_stability": 0.1893816415908074,
+      "rapr": 0.03284640531151301
+    },
+    {
+      "problem_id": 11,
+      "is_correct_eval_only": false,
+      "null_q90": 0.11918609983718303,
+      "agreement": 0.21384453306593315,
+      "indep_cov": 0.199400834975208,
+      "specificity": 0.09465843322875012,
+      "anchor_stability": 0.18535590138788346,
+      "rapr": 0.01754549921507976
+    },
+    {
+      "problem_id": 11,
+      "is_correct_eval_only": false,
+      "null_q90": 0.10081228373839451,
+      "agreement": 0.16466909759376258,
+      "indep_cov": 0.13987824950994915,
+      "specificity": 0.06385681385536807,
+      "anchor_stability": 0.1513502029827411,
+      "rapr": 0.009664741738841071
+    },
+    {
+      "problem_id": 11,
+      "is_correct_eval_only": false,
+      "null_q90": 0.09836740827249588,
+      "agreement": 0.1997099910976877,
+      "indep_cov": 0.16702542154476357,
+      "specificity": 0.10134258282519182,
+      "anchor_stability": 0.16959840165929616,
+      "rapr": 0.01718754006717737
+    },
+    {
+      "problem_id": 12,
+      "is_correct_eval_only": false,
+      "null_q90": 0.09081749331479692,
+      "agreement": 0.19350118554499152,
+      "indep_cov": 0.18341867634180467,
+      "specificity": 0.10268369223019459,
+      "anchor_stability": 0.1538962695708329,
+      "rapr": 0.015802637179986468
+    },
+    {
+      "problem_id": 12,
+      "is_correct_eval_only": false,
+      "null_q90": 0.10091483533701216,
+      "agreement": 0.15135055229053662,
+      "indep_cov": 0.14762218958505738,
+      "specificity": 0.05043571695352446,
+      "anchor_stability": 0.1761879156562171,
+      "rapr": 0.008886163844668407
+    },
+    {
+      "problem_id": 12,
+      "is_correct_eval_only": false,
+      "null_q90": 0.09162730053727246,
+      "agreement": 0.15917085694741756,
+      "indep_cov": 0.15254873759663445,
+      "specificity": 0.0675435564101451,
+      "anchor_stability": 0.15350541829644648,
+      "rapr": 0.010368301879968954
+    },
+    {
+      "problem_id": 13,
+      "is_correct_eval_only": false,
+      "null_q90": 0.11118866295543267,
+      "agreement": 0.1402149089104059,
+      "indep_cov": 0.13477928828613828,
+      "specificity": 0.029026245954973218,
+      "anchor_stability": 0.15525923798409808,
+      "rapr": 0.004506592828508151
+    },
+    {
+      "problem_id": 13,
+      "is_correct_eval_only": false,
+      "null_q90": 0.11850928577997076,
+      "agreement": 0.1457627896224477,
+      "indep_cov": 0.13997520755921933,
+      "specificity": 0.027253503842476948,
+      "anchor_stability": 0.1610494590179946,
+      "rapr": 0.00438916205017575
+    },
+    {
+      "problem_id": 13,
+      "is_correct_eval_only": false,
+      "null_q90": 0.1343341697450327,
+      "agreement": 0.21233623168758745,
+      "indep_cov": 0.21028301138127276,
+      "specificity": 0.07800206194255474,
+      "anchor_stability": 0.16872881022453767,
+      "rapr": 0.013161195106627952
+    },
+    {
+      "problem_id": 14,
+      "is_correct_eval_only": true,
+      "null_q90": 0.10103361041348612,
+      "agreement": 0.27303625090194883,
+      "indep_cov": 0.24097111590106068,
+      "specificity": 0.1720026404884627,
+      "anchor_stability": 0.1984698288048298,
+      "rapr": 0.03413733461172388
+    },
+    {
+      "problem_id": 14,
+      "is_correct_eval_only": false,
+      "null_q90": 0.11919833428881074,
+      "agreement": 0.26445235641896225,
+      "indep_cov": 0.221812336245366,
+      "specificity": 0.1452540221301515,
+      "anchor_stability": 0.21250670954676884,
+      "rapr": 0.03086745429131204
+    },
+    {
+      "problem_id": 14,
+      "is_correct_eval_only": false,
+      "null_q90": 0.09799756119818323,
+      "agreement": 0.18903329818287365,
+      "indep_cov": 0.16337198166250164,
+      "specificity": 0.09103573698469042,
+      "anchor_stability": 0.21517889545732968,
+      "rapr": 0.01958896933150966
+    },
+    {
+      "problem_id": 15,
+      "is_correct_eval_only": false,
+      "null_q90": 0.10661075850486713,
+      "agreement": 0.12581190401954961,
+      "indep_cov": 0.12581190401954961,
+      "specificity": 0.01920114551468248,
+      "anchor_stability": 0.12948074840887625,
+      "rapr": 0.0024861786915488246
+    },
+    {
+      "problem_id": 15,
+      "is_correct_eval_only": false,
+      "null_q90": 0.11646293586590949,
+      "agreement": 0.14522476495706504,
+      "indep_cov": 0.14192911586737986,
+      "specificity": 0.028761829091155558,
+      "anchor_stability": 0.13540162593837435,
+      "rapr": 0.0038943984239040983
+    },
+    {
+      "problem_id": 15,
+      "is_correct_eval_only": false,
+      "null_q90": 0.12346042340956466,
+      "agreement": 0.15406840252970735,
+      "indep_cov": 0.1502530805982851,
+      "specificity": 0.030607979120142695,
+      "anchor_stability": 0.15311172613796398,
+      "rapr": 0.0046864405166798075
+    },
+    {
+      "problem_id": 16,
+      "is_correct_eval_only": false,
+      "null_q90": 0.11167075308592452,
+      "agreement": 0.12379707040079202,
+      "indep_cov": 0.12298129320994153,
+      "specificity": 0.012126317314867505,
+      "anchor_stability": 0.14276277077329066,
+      "rapr": 0.0017311866591466151
+    },
+    {
+      "problem_id": 16,
+      "is_correct_eval_only": false,
+      "null_q90": 0.11123424891534112,
+      "agreement": 0.1858752772662677,
+      "indep_cov": 0.18143218256654178,
+      "specificity": 0.07464102835092659,
+      "anchor_stability": 0.1440768647421738,
+      "rapr": 0.01075404534593321
+    },
+    {
+      "problem_id": 16,
+      "is_correct_eval_only": false,
+      "null_q90": 0.09960402854948404,
+      "agreement": 0.13035816884825915,
+      "indep_cov": 0.12852984628291603,
+      "specificity": 0.030754140298775115,
+      "anchor_stability": 0.14610368654393488,
+      "rapr": 0.004493293274140435
+    },
+    {
+      "problem_id": 17,
+      "is_correct_eval_only": false,
+      "null_q90": 0.090082347662577,
+      "agreement": 0.15359667021539808,
+      "indep_cov": 0.14690629546509107,
+      "specificity": 0.06351432255282108,
+      "anchor_stability": 0.17516117461402675,
+      "rapr": 0.01112524334316631
+    },
+    {
+      "problem_id": 17,
+      "is_correct_eval_only": true,
+      "null_q90": 0.10447642501169696,
+      "agreement": 0.2421296321150735,
+      "indep_cov": 0.23046669077389142,
+      "specificity": 0.13765320710337653,
+      "anchor_stability": 0.15843533337569068,
+      "rapr": 0.021809131757656454
+    },
+    {
+      "problem_id": 17,
+      "is_correct_eval_only": false,
+      "null_q90": 0.11401650666112009,
+      "agreement": 0.15453510874053766,
+      "indep_cov": 0.14673496443218864,
+      "specificity": 0.04051860207941757,
+      "anchor_stability": 0.1905114426814537,
+      "rapr": 0.007719257337585592
+    },
+    {
+      "problem_id": 18,
+      "is_correct_eval_only": false,
+      "null_q90": 0.12488912941635927,
+      "agreement": 0.23381010650683556,
+      "indep_cov": 0.22593816854194826,
+      "specificity": 0.1089209770904763,
+      "anchor_stability": 0.20087911639038414,
+      "rapr": 0.02187994963431215
+    },
+    {
+      "problem_id": 18,
+      "is_correct_eval_only": false,
+      "null_q90": 0.10751958961971124,
+      "agreement": 0.24209071834296583,
+      "indep_cov": 0.2330694826260873,
+      "specificity": 0.1345711287232546,
+      "anchor_stability": 0.19018538794973944,
+      "rapr": 0.0255934623230665
+    },
+    {
+      "problem_id": 18,
+      "is_correct_eval_only": false,
+      "null_q90": 0.13646008322457634,
+      "agreement": 0.17609593242113467,
+      "indep_cov": 0.17216587095487568,
+      "specificity": 0.039635849196558326,
+      "anchor_stability": 0.24010901778278765,
+      "rapr": 0.009516924819572312
+    },
+    {
+      "problem_id": 19,
+      "is_correct_eval_only": false,
+      "null_q90": 0.09725574646147285,
+      "agreement": 0.24103054539774313,
+      "indep_cov": 0.23098419212620547,
+      "specificity": 0.14377479893627026,
+      "anchor_stability": 0.1754210530284253,
+      "rapr": 0.025221126628350653
+    },
+    {
+      "problem_id": 19,
+      "is_correct_eval_only": false,
+      "null_q90": 0.11184478926006632,
+      "agreement": 0.1403730616475575,
+      "indep_cov": 0.13559826978843173,
+      "specificity": 0.028528272387491185,
+      "anchor_stability": 0.18073931747728633,
+      "rapr": 0.005156180480121271
+    },
+    {
+      "problem_id": 19,
+      "is_correct_eval_only": false,
+      "null_q90": 0.10630866868390865,
+      "agreement": 0.1785057933456302,
+      "indep_cov": 0.17282669982706766,
+      "specificity": 0.07219712466172154,
+      "anchor_stability": 0.18324879123599322,
+      "rapr": 0.013230035824974788
+    },
+    {
+      "problem_id": 20,
+      "is_correct_eval_only": false,
+      "null_q90": 0.10138365941078958,
+      "agreement": 0.18682526384149345,
+      "indep_cov": 0.17545255296408754,
+      "specificity": 0.08544160443070387,
+      "anchor_stability": 0.1359220585037853,
+      "rapr": 0.011613398756087412
+    },
+    {
+      "problem_id": 20,
+      "is_correct_eval_only": false,
+      "null_q90": 0.09461491657626891,
+      "agreement": 0.16332217639368007,
+      "indep_cov": 0.15328376466764823,
+      "specificity": 0.06870725981741116,
+      "anchor_stability": 0.14872615877675582,
+      "rapr": 0.010218566832720108
+    },
+    {
+      "problem_id": 20,
+      "is_correct_eval_only": false,
+      "null_q90": 0.1055162883338214,
+      "agreement": 0.14283432033699195,
+      "indep_cov": 0.1339299522873611,
+      "specificity": 0.03731803200317055,
+      "anchor_stability": 0.17801805263855575,
+      "rapr": 0.006643283385507723
+    },
+    {
+      "problem_id": 21,
+      "is_correct_eval_only": false,
+      "null_q90": 0.09413150415015695,
+      "agreement": 0.14597191874913043,
+      "indep_cov": 0.12580206533958427,
+      "specificity": 0.05184041459897348,
+      "anchor_stability": 0.15522002369508014,
+      "rapr": 0.008046670382415442
+    },
+    {
+      "problem_id": 21,
+      "is_correct_eval_only": false,
+      "null_q90": 0.08454555419167549,
+      "agreement": 0.17199117628169275,
+      "indep_cov": 0.16091178018035662,
+      "specificity": 0.08744562209001726,
+      "anchor_stability": 0.1663236954544851,
+      "rapr": 0.014544279017328026
+    },
+    {
+      "problem_id": 21,
+      "is_correct_eval_only": false,
+      "null_q90": 0.10661486100525672,
+      "agreement": 0.19631418785375376,
+      "indep_cov": 0.17600046511206785,
+      "specificity": 0.08969932684849705,
+      "anchor_stability": 0.14117059148244349,
+      "rapr": 0.01266290702677935
+    },
+    {
+      "problem_id": 22,
+      "is_correct_eval_only": true,
+      "null_q90": 0.11437227989663279,
+      "agreement": 0.21651885066371945,
+      "indep_cov": 0.19038685060000177,
+      "specificity": 0.10214657076708666,
+      "anchor_stability": 0.19983671864572822,
+      "rapr": 0.020412635523008264
+    },
+    {
+      "problem_id": 22,
+      "is_correct_eval_only": false,
+      "null_q90": 0.10414151004470214,
+      "agreement": 0.21898530689529622,
+      "indep_cov": 0.199811423837238,
+      "specificity": 0.11484379685059408,
+      "anchor_stability": 0.1907231200786081,
+      "rapr": 0.021903367257019128
+    },
+    {
+      "problem_id": 22,
+      "is_correct_eval_only": true,
+      "null_q90": 0.10039374809983004,
+      "agreement": 0.1800040599958315,
+      "indep_cov": 0.16725039701123243,
+      "specificity": 0.07961031189600146,
+      "anchor_stability": 0.16688883272413585,
+      "rapr": 0.01328607202512807
+    },
+    {
+      "problem_id": 23,
+      "is_correct_eval_only": true,
+      "null_q90": 0.0958458791955354,
+      "agreement": 0.17926160603674995,
+      "indep_cov": 0.16481634727064415,
+      "specificity": 0.08341572684121455,
+      "anchor_stability": 0.4227194324869398,
+      "rapr": 0.035261448710803805
+    },
+    {
+      "problem_id": 23,
+      "is_correct_eval_only": true,
+      "null_q90": 0.10479820737525891,
+      "agreement": 0.366199463083853,
+      "indep_cov": 0.3201909805735622,
+      "specificity": 0.26140125570859407,
+      "anchor_stability": 0.15944033014367678,
+      "rapr": 0.04167790251014991
+    },
+    {
+      "problem_id": 23,
+      "is_correct_eval_only": true,
+      "null_q90": 0.10471495985851931,
+      "agreement": 0.3319119660427798,
+      "indep_cov": 0.29363496129134325,
+      "specificity": 0.22719700618426047,
+      "anchor_stability": 0.19648252650493306,
+      "rapr": 0.0446402417894404
+    },
+    {
+      "problem_id": 24,
+      "is_correct_eval_only": false,
+      "null_q90": 0.11775186168785626,
+      "agreement": 0.204246438723457,
+      "indep_cov": 0.18602638128922472,
+      "specificity": 0.08649457703560073,
+      "anchor_stability": 0.23342841952840174,
+      "rapr": 0.02019029241519787
+    },
+    {
+      "problem_id": 24,
+      "is_correct_eval_only": false,
+      "null_q90": 0.1263201998267633,
+      "agreement": 0.21873725385989265,
+      "indep_cov": 0.19782550662151588,
+      "specificity": 0.09241705403312936,
+      "anchor_stability": 0.2116623307584566,
+      "rapr": 0.01956120905848238
+    },
+    {
+      "problem_id": 24,
+      "is_correct_eval_only": true,
+      "null_q90": 0.12625555664308355,
+      "agreement": 0.24363309588746468,
+      "indep_cov": 0.2202399294067398,
+      "specificity": 0.11737753924438113,
+      "anchor_stability": 0.15900106703062206,
+      "rapr": 0.018663153985285313
+    },
+    {
+      "problem_id": 25,
+      "is_correct_eval_only": true,
+      "null_q90": 0.12411780444782779,
+      "agreement": 0.2222583911815204,
+      "indep_cov": 0.19899971882277,
+      "specificity": 0.09814058673369262,
+      "anchor_stability": 0.2042814578943341,
+      "rapr": 0.020048302136564073
+    },
+    {
+      "problem_id": 25,
+      "is_correct_eval_only": false,
+      "null_q90": 0.12090489267541679,
+      "agreement": 0.2224674171003811,
+      "indep_cov": 0.1936700563565778,
+      "specificity": 0.1015625244249643,
+      "anchor_stability": 0.181858553986038,
+      "rapr": 0.018470013831095675
+    },
+    {
+      "problem_id": 25,
+      "is_correct_eval_only": false,
+      "null_q90": 0.10760165742750105,
+      "agreement": 0.2003044911296687,
+      "indep_cov": 0.17381373583227935,
+      "specificity": 0.09270283370216764,
+      "anchor_stability": 0.18034349913125508,
+      "rapr": 0.016718353409231754
+    },
+    {
+      "problem_id": 26,
+      "is_correct_eval_only": false,
+      "null_q90": 0.1081375301540454,
+      "agreement": 0.20045496346658245,
+      "indep_cov": 0.17161530572131023,
+      "specificity": 0.09231743331253706,
+      "anchor_stability": 0.16231776888413307,
+      "rapr": 0.014984759804400758
+    },
+    {
+      "problem_id": 26,
+      "is_correct_eval_only": false,
+      "null_q90": 0.11193589496262975,
+      "agreement": 0.24292519537401747,
+      "indep_cov": 0.2054887885735435,
+      "specificity": 0.13098930041138773,
+      "anchor_stability": 0.16940760663733498,
+      "rapr": 0.022190583877792075
+    },
+    {
+      "problem_id": 26,
+      "is_correct_eval_only": false,
+      "null_q90": 0.11102370240348598,
+      "agreement": 0.17490488697082812,
+      "indep_cov": 0.14971167488684012,
+      "specificity": 0.06388118456734214,
+      "anchor_stability": 0.1950903936602258,
+      "rapr": 0.012462605444724318
+    },
+    {
+      "problem_id": 27,
+      "is_correct_eval_only": false,
+      "null_q90": 0.10255013530092684,
+      "agreement": 0.1506010992868416,
+      "indep_cov": 0.14316616327533493,
+      "specificity": 0.048050963985914755,
+      "anchor_stability": 0.20517355335466916,
+      "rapr": 0.009858787023107368
+    },
+    {
+      "problem_id": 27,
+      "is_correct_eval_only": false,
+      "null_q90": 0.10025146595135527,
+      "agreement": 0.1418833888147651,
+      "indep_cov": 0.12971339071161286,
+      "specificity": 0.04163192286340982,
+      "anchor_stability": 0.20834456422762576,
+      "rapr": 0.008673784826935248
+    },
+    {
+      "problem_id": 27,
+      "is_correct_eval_only": false,
+      "null_q90": 0.11238246421513455,
+      "agreement": 0.31290625672229805,
+      "indep_cov": 0.2921563332464035,
+      "specificity": 0.2005237925071635,
+      "anchor_stability": 0.1515177696510564,
+      "rapr": 0.03038291780265663
+    },
+    {
+      "problem_id": 28,
+      "is_correct_eval_only": true,
+      "null_q90": 0.11694577937333564,
+      "agreement": 0.1979917896241487,
+      "indep_cov": 0.17957349409878737,
+      "specificity": 0.08104601025081307,
+      "anchor_stability": 0.13968526711280532,
+      "rapr": 0.011320933590311982
+    },
+    {
+      "problem_id": 28,
+      "is_correct_eval_only": false,
+      "null_q90": 0.10140095381887484,
+      "agreement": 0.13515311785431772,
+      "indep_cov": 0.12653006071192782,
+      "specificity": 0.03375216403544287,
+      "anchor_stability": 0.16393496257865542,
+      "rapr": 0.005533159748098967
+    },
+    {
+      "problem_id": 28,
+      "is_correct_eval_only": false,
+      "null_q90": 0.09962509412748442,
+      "agreement": 0.15372053671549085,
+      "indep_cov": 0.14588347733355858,
+      "specificity": 0.05409544258800643,
+      "anchor_stability": 0.14836680245281303,
+      "rapr": 0.008025967844052238
+    },
+    {
+      "problem_id": 29,
+      "is_correct_eval_only": false,
+      "null_q90": 0.1103143576491102,
+      "agreement": 0.20393555171239136,
+      "indep_cov": 0.19260695887288912,
+      "specificity": 0.09362119406328116,
+      "anchor_stability": 0.21704181393462407,
+      "rapr": 0.020319713782220004
+    },
+    {
+      "problem_id": 29,
+      "is_correct_eval_only": false,
+      "null_q90": 0.11453352931155877,
+      "agreement": 0.2269301072520658,
+      "indep_cov": 0.20262828339216854,
+      "specificity": 0.11239657794050703,
+      "anchor_stability": 0.18013047396706844,
+      "rapr": 0.02024604885670008
+    },
+    {
+      "problem_id": 29,
+      "is_correct_eval_only": false,
+      "null_q90": 0.12155907098073931,
+      "agreement": 0.21522075561585832,
+      "indep_cov": 0.19345699167906832,
+      "specificity": 0.09366168463511901,
+      "anchor_stability": 0.19151994604243344,
+      "rapr": 0.01793808078756141
+    },
+    {
+      "problem_id": 30,
+      "is_correct_eval_only": false,
+      "null_q90": 0.11871044908054341,
+      "agreement": 0.1647283889274443,
+      "indep_cov": 0.16054696299184618,
+      "specificity": 0.04601793984690088,
+      "anchor_stability": 0.14836171792259412,
+      "rapr": 0.006827300610944812
+    },
+    {
+      "problem_id": 30,
+      "is_correct_eval_only": false,
+      "null_q90": 0.11982370739559232,
+      "agreement": 0.16674064858302728,
+      "indep_cov": 0.15594225131231712,
+      "specificity": 0.04691694118743496,
+      "anchor_stability": 0.15980118499312435,
+      "rapr": 0.007497382798004829
+    },
+    {
+      "problem_id": 30,
+      "is_correct_eval_only": true,
+      "null_q90": 0.08783858525413522,
+      "agreement": 0.17774251074354702,
+      "indep_cov": 0.16578864603798438,
+      "specificity": 0.0899039254894118,
+      "anchor_stability": 0.17411495742642918,
+      "rapr": 0.015653618159057796
+    },
+    {
+      "problem_id": 31,
+      "is_correct_eval_only": false,
+      "null_q90": 0.10944936162600961,
+      "agreement": 0.1722096967739695,
+      "indep_cov": 0.16434279376197106,
+      "specificity": 0.06276033514795988,
+      "anchor_stability": 0.22216257586438307,
+      "rapr": 0.013942997718582744
+    },
+    {
+      "problem_id": 31,
+      "is_correct_eval_only": false,
+      "null_q90": 0.11049889160182531,
+      "agreement": 0.1969098441901166,
+      "indep_cov": 0.18217831810416144,
+      "specificity": 0.08641095258829128,
+      "anchor_stability": 0.14600514971402526,
+      "rapr": 0.012616444069585005
+    },
+    {
+      "problem_id": 31,
+      "is_correct_eval_only": false,
+      "null_q90": 0.11363004653056491,
+      "agreement": 0.1688055627911337,
+      "indep_cov": 0.15731315550849634,
+      "specificity": 0.0551755162605688,
+      "anchor_stability": 0.1356665417962205,
+      "rapr": 0.007485471482892501
+    },
+    {
+      "problem_id": 32,
+      "is_correct_eval_only": true,
+      "null_q90": 0.11396975859854724,
+      "agreement": 0.21739981099652167,
+      "indep_cov": 0.19536489941987023,
+      "specificity": 0.10343005239797443,
+      "anchor_stability": 0.27534026082780305,
+      "rapr": 0.028478457604691615
+    },
+    {
+      "problem_id": 32,
+      "is_correct_eval_only": false,
+      "null_q90": 0.10905169653177578,
+      "agreement": 0.4105505148937998,
+      "indep_cov": 0.20265087669736945,
+      "specificity": 0.301498818362024,
+      "anchor_stability": 0.14941796921183192,
+      "rapr": 0.04504934115942061
+    },
+    {
+      "problem_id": 32,
+      "is_correct_eval_only": false,
+      "null_q90": 0.1085369200530565,
+      "agreement": 0.39875222463251747,
+      "indep_cov": 0.19440401738631946,
+      "specificity": 0.290215304579461,
+      "anchor_stability": 0.1676615634639241,
+      "rapr": 0.04865795170695136
+    },
+    {
+      "problem_id": 33,
+      "is_correct_eval_only": false,
+      "null_q90": 0.11904239488416735,
+      "agreement": 0.1658453921954006,
+      "indep_cov": 0.14333383016123907,
+      "specificity": 0.046802997311233246,
+      "anchor_stability": 0.1657077465195586,
+      "rapr": 0.007755619214805422
+    },
+    {
+      "problem_id": 33,
+      "is_correct_eval_only": false,
+      "null_q90": 0.10515206829467504,
+      "agreement": 0.18802721727419647,
+      "indep_cov": 0.16072723525223748,
+      "specificity": 0.08287514897952143,
+      "anchor_stability": 0.17707037496812436,
+      "rapr": 0.01467473370534303
+    },
+    {
+      "problem_id": 33,
+      "is_correct_eval_only": true,
+      "null_q90": 0.12728630989583603,
+      "agreement": 0.21672466084980463,
+      "indep_cov": 0.19775797202755774,
+      "specificity": 0.0894383509539686,
+      "anchor_stability": 0.1590409159533513,
+      "rapr": 0.014224357257076456
+    },
+    {
+      "problem_id": 34,
+      "is_correct_eval_only": false,
+      "null_q90": 0.10596156400607505,
+      "agreement": 0.34054575082278643,
+      "indep_cov": 0.3082568778730501,
+      "specificity": 0.2345841868167114,
+      "anchor_stability": 0.1682196885472535,
+      "rapr": 0.03946167884441792
+    },
+    {
+      "problem_id": 34,
+      "is_correct_eval_only": false,
+      "null_q90": 0.11351773635452236,
+      "agreement": 0.16680468548195032,
+      "indep_cov": 0.15189707094064697,
+      "specificity": 0.05328694912742796,
+      "anchor_stability": 0.22660657734553952,
+      "rapr": 0.012075173158952332
+    },
+    {
+      "problem_id": 34,
+      "is_correct_eval_only": false,
+      "null_q90": 0.11119754325202387,
+      "agreement": 0.16875035057411863,
+      "indep_cov": 0.1473280747014436,
+      "specificity": 0.057552807322094765,
+      "anchor_stability": 0.21265575762234765,
+      "rapr": 0.012238935844373059
+    },
+    {
+      "problem_id": 35,
+      "is_correct_eval_only": false,
+      "null_q90": 0.10794459784752197,
+      "agreement": 0.1979964015544719,
+      "indep_cov": 0.17721743287407793,
+      "specificity": 0.09005180370694993,
+      "anchor_stability": 0.1925067485749612,
+      "rapr": 0.01733557993493557
+    },
+    {
+      "problem_id": 35,
+      "is_correct_eval_only": false,
+      "null_q90": 0.1026553392957379,
+      "agreement": 0.19849675697709018,
+      "indep_cov": 0.17876227472574735,
+      "specificity": 0.09584141768135228,
+      "anchor_stability": 0.20052979179447705,
+      "rapr": 0.019219059532929083
+    },
+    {
+      "problem_id": 35,
+      "is_correct_eval_only": false,
+      "null_q90": 0.11306732373334234,
+      "agreement": 0.23024400038310605,
+      "indep_cov": 0.22194697753368942,
+      "specificity": 0.11717667664976371,
+      "anchor_stability": 0.18489014476407648,
+      "rapr": 0.02166481270874819
+    },
+    {
+      "problem_id": 36,
+      "is_correct_eval_only": false,
+      "null_q90": 0.11297289534519916,
+      "agreement": 0.21467736304994608,
+      "indep_cov": 0.1732119347245964,
+      "specificity": 0.10170446770474692,
+      "anchor_stability": 0.12705340276868668,
+      "rapr": 0.012921898698666097
+    },
+    {
+      "problem_id": 36,
+      "is_correct_eval_only": false,
+      "null_q90": 0.10619799624330957,
+      "agreement": 0.1769051499116775,
+      "indep_cov": 0.1443482581585521,
+      "specificity": 0.07070715366836793,
+      "anchor_stability": 0.14086919562796824,
+      "rapr": 0.009960459862406134
+    },
+    {
+      "problem_id": 36,
+      "is_correct_eval_only": false,
+      "null_q90": 0.11006949680081078,
+      "agreement": 0.14658228016635177,
+      "indep_cov": 0.14082495643610768,
+      "specificity": 0.03651278336554099,
+      "anchor_stability": 0.19046255092260123,
+      "rapr": 0.0069543178610852584
+    },
+    {
+      "problem_id": 37,
+      "is_correct_eval_only": false,
+      "null_q90": 0.11299949948534341,
+      "agreement": 0.2612414854462525,
+      "indep_cov": 0.23891055836655686,
+      "specificity": 0.14824198596090907,
+      "anchor_stability": 0.17788233245366175,
+      "rapr": 0.026369630230289483
+    },
+    {
+      "problem_id": 37,
+      "is_correct_eval_only": false,
+      "null_q90": 0.09122165778702825,
+      "agreement": 0.15201775883167762,
+      "indep_cov": 0.14833846549969298,
+      "specificity": 0.06079610104464937,
+      "anchor_stability": 0.23625933751887152,
+      "rapr": 0.014363646556539234
+    },
+    {
+      "problem_id": 37,
+      "is_correct_eval_only": false,
+      "null_q90": 0.11450353476272727,
+      "agreement": 0.23250883445034698,
+      "indep_cov": 0.21366729854743244,
+      "specificity": 0.1180052996876197,
+      "anchor_stability": 0.18677465244114907,
+      "rapr": 0.022040398835368808
+    },
+    {
+      "problem_id": 38,
+      "is_correct_eval_only": false,
+      "null_q90": 0.08874949257264926,
+      "agreement": 0.10992444610930598,
+      "indep_cov": 0.10733675619810684,
+      "specificity": 0.021174953536656715,
+      "anchor_stability": 0.14948254588520826,
+      "rapr": 0.0031652859636604404
+    },
+    {
+      "problem_id": 38,
+      "is_correct_eval_only": false,
+      "null_q90": 0.10170445042247242,
+      "agreement": 0.13552930279376363,
+      "indep_cov": 0.13310337973867734,
+      "specificity": 0.03382485237129121,
+      "anchor_stability": 0.13672720012431824,
+      "rapr": 0.004624777359345054
+    },
+    {
+      "problem_id": 38,
+      "is_correct_eval_only": false,
+      "null_q90": 0.11404235287392171,
+      "agreement": 0.18055737545977713,
+      "indep_cov": 0.17562398438064522,
+      "specificity": 0.06651502258585541,
+      "anchor_stability": 0.1298543743079029,
+      "rapr": 0.008637266639962284
+    },
+    {
+      "problem_id": 39,
+      "is_correct_eval_only": false,
+      "null_q90": 0.10236739103787897,
+      "agreement": 0.1636475580971909,
+      "indep_cov": 0.16172938720748165,
+      "specificity": 0.06128016705931193,
+      "anchor_stability": 0.17611182505151307,
+      "rapr": 0.010792162060277036
+    },
+    {
+      "problem_id": 39,
+      "is_correct_eval_only": false,
+      "null_q90": 0.11218732092929283,
+      "agreement": 0.1560264385275299,
+      "indep_cov": 0.15548769352370084,
+      "specificity": 0.04383911759823707,
+      "anchor_stability": 0.18735311290233544,
+      "rapr": 0.00821339514892127
+    },
+    {
+      "problem_id": 39,
+      "is_correct_eval_only": false,
+      "null_q90": 0.1000388588114984,
+      "agreement": 0.20413670537054668,
+      "indep_cov": 0.2011039041506774,
+      "specificity": 0.10409784655904827,
+      "anchor_stability": 0.15485604692801136,
+      "rapr": 0.016120181011852905
+    },
+    {
+      "problem_id": 40,
+      "is_correct_eval_only": false,
+      "null_q90": 0.10292342105327548,
+      "agreement": 0.25811160461304156,
+      "indep_cov": 0.20672742871527955,
+      "specificity": 0.15518818355976607,
+      "anchor_stability": 0.17022942498399238,
+      "rapr": 0.026417595251689237
+    },
+    {
+      "problem_id": 40,
+      "is_correct_eval_only": true,
+      "null_q90": 0.09005724632044598,
+      "agreement": 0.2333439402979481,
+      "indep_cov": 0.19920207939030293,
+      "specificity": 0.14328669397750213,
+      "anchor_stability": 0.16051390979888736,
+      "rapr": 0.022999507472485553
+    },
+    {
+      "problem_id": 40,
+      "is_correct_eval_only": true,
+      "null_q90": 0.11103683588929811,
+      "agreement": 0.1947629333908769,
+      "indep_cov": 0.15867621473622834,
+      "specificity": 0.0837260975015788,
+      "anchor_stability": 0.23386238805893106,
+      "rapr": 0.019580385104574122
+    },
+    {
+      "problem_id": 41,
+      "is_correct_eval_only": false,
+      "null_q90": 0.09973211219111051,
+      "agreement": 0.20082725795489048,
+      "indep_cov": 0.1724070628113422,
+      "specificity": 0.10109514576377997,
+      "anchor_stability": 0.1852247594488642,
+      "rapr": 0.01872532405554401
+    },
+    {
+      "problem_id": 41,
+      "is_correct_eval_only": false,
+      "null_q90": 0.08742097105164441,
+      "agreement": 0.23052159233380484,
+      "indep_cov": 0.2001724635818334,
+      "specificity": 0.14310062128216045,
+      "anchor_stability": 0.19411276530343735,
+      "rapr": 0.027777657313720082
+    },
+    {
+      "problem_id": 41,
+      "is_correct_eval_only": false,
+      "null_q90": 0.08985706737149535,
+      "agreement": 0.2311425423515428,
+      "indep_cov": 0.1961003865597245,
+      "specificity": 0.14128547498004745,
+      "anchor_stability": 0.1893423882005985,
+      "rapr": 0.026751329250778094
+    },
+    {
+      "problem_id": 42,
+      "is_correct_eval_only": false,
+      "null_q90": 0.09739176114475183,
+      "agreement": 0.2361965119242558,
+      "indep_cov": 0.21057834165563283,
+      "specificity": 0.138804750779504,
+      "anchor_stability": 0.17257524616366793,
+      "rapr": 0.02395426403445948
+    },
+    {
+      "problem_id": 42,
+      "is_correct_eval_only": true,
+      "null_q90": 0.10630336522555382,
+      "agreement": 0.2425476487318616,
+      "indep_cov": 0.18320757066398802,
+      "specificity": 0.1362442835063078,
+      "anchor_stability": 0.25196663669778396,
+      "rapr": 0.03432901388438374
+    },
+    {
+      "problem_id": 42,
+      "is_correct_eval_only": true,
+      "null_q90": 0.10349193411218463,
+      "agreement": 0.3169615330908332,
+      "indep_cov": 0.23472984199429375,
+      "specificity": 0.21346959897864856,
+      "anchor_stability": 0.2039738714524627,
+      "rapr": 0.043542220541079625
+    },
+    {
+      "problem_id": 43,
+      "is_correct_eval_only": false,
+      "null_q90": 0.09815573307973022,
+      "agreement": 0.20735138499730907,
+      "indep_cov": 0.18821949336289245,
+      "specificity": 0.10919565191757885,
+      "anchor_stability": 0.18144559011508973,
+      "rapr": 0.019813069500187023
+    },
+    {
+      "problem_id": 43,
+      "is_correct_eval_only": false,
+      "null_q90": 0.09779334835539694,
+      "agreement": 0.19303696367693202,
+      "indep_cov": 0.17244878687213666,
+      "specificity": 0.09524361532153508,
+      "anchor_stability": 0.17839548578064632,
+      "rapr": 0.01699103102279026
+    },
+    {
+      "problem_id": 43,
+      "is_correct_eval_only": false,
+      "null_q90": 0.09178258451922187,
+      "agreement": 0.21087622000478845,
+      "indep_cov": 0.18257462774661187,
+      "specificity": 0.11909363548556658,
+      "anchor_stability": 0.18340183208590494,
+      "rapr": 0.021841990937823852
+    },
+    {
+      "problem_id": 44,
+      "is_correct_eval_only": false,
+      "null_q90": 0.0983547686689671,
+      "agreement": 0.1446209456471258,
+      "indep_cov": 0.13722238811827753,
+      "specificity": 0.0462661769781587,
+      "anchor_stability": 0.15696859710746824,
+      "rapr": 0.007262336893787415
+    },
+    {
+      "problem_id": 44,
+      "is_correct_eval_only": false,
+      "null_q90": 0.11188491477573426,
+      "agreement": 0.15014185573520922,
+      "indep_cov": 0.14344891901652562,
+      "specificity": 0.03825694095947496,
+      "anchor_stability": 0.14578886334139712,
+      "rapr": 0.005577435937400794
+    },
+    {
+      "problem_id": 44,
+      "is_correct_eval_only": false,
+      "null_q90": 0.11620107875548372,
+      "agreement": 0.17670123313636318,
+      "indep_cov": 0.17364511158938936,
+      "specificity": 0.06050015438087947,
+      "anchor_stability": 0.15155895827532712,
+      "rapr": 0.009169340373462561
+    },
+    {
+      "problem_id": 45,
+      "is_correct_eval_only": false,
+      "null_q90": 0.10781348170078332,
+      "agreement": 0.1443726384239451,
+      "indep_cov": 0.13617426619870204,
+      "specificity": 0.036559156723161776,
+      "anchor_stability": 0.22901744496691803,
+      "rapr": 0.008372684662883633
+    },
+    {
+      "problem_id": 45,
+      "is_correct_eval_only": false,
+      "null_q90": 0.11731677444009614,
+      "agreement": 0.19029520070190092,
+      "indep_cov": 0.17285152918893135,
+      "specificity": 0.07297842626180479,
+      "anchor_stability": 0.1532472944441659,
+      "rapr": 0.011183746377414648
+    },
+    {
+      "problem_id": 45,
+      "is_correct_eval_only": false,
+      "null_q90": 0.10000918441865073,
+      "agreement": 0.2664998212368409,
+      "indep_cov": 0.24046753353303263,
+      "specificity": 0.16649063681819018,
+      "anchor_stability": 0.16722858950958208,
+      "rapr": 0.02784199436165804
+    },
+    {
+      "problem_id": 46,
+      "is_correct_eval_only": false,
+      "null_q90": 0.13288325319905633,
+      "agreement": 0.15709724553305981,
+      "indep_cov": 0.14861364909061664,
+      "specificity": 0.02421399233400348,
+      "anchor_stability": 0.2325765068552489,
+      "rapr": 0.005631605754062304
+    },
+    {
+      "problem_id": 46,
+      "is_correct_eval_only": false,
+      "null_q90": 0.10529833645905645,
+      "agreement": 0.22442716274551985,
+      "indep_cov": 0.19211994635817123,
+      "specificity": 0.1191288262864634,
+      "anchor_stability": 0.1252606264820335,
+      "rapr": 0.014922151412711747
+    },
+    {
+      "problem_id": 46,
+      "is_correct_eval_only": false,
+      "null_q90": 0.09573843105540059,
+      "agreement": 0.17687483265081141,
+      "indep_cov": 0.15380151078682314,
+      "specificity": 0.08113640159541083,
+      "anchor_stability": 0.1366979728983286,
+      "rapr": 0.011091181626357376
+    },
+    {
+      "problem_id": 47,
+      "is_correct_eval_only": false,
+      "null_q90": 0.11720903913944547,
+      "agreement": 0.18404966113361892,
+      "indep_cov": 0.16398099940491725,
+      "specificity": 0.06684062199417345,
+      "anchor_stability": 0.15876774027175866,
+      "rapr": 0.01061213451237373
+    },
+    {
+      "problem_id": 47,
+      "is_correct_eval_only": false,
+      "null_q90": 0.10645479180436998,
+      "agreement": 0.15587686134975653,
+      "indep_cov": 0.14002094760897527,
+      "specificity": 0.049422069545386554,
+      "anchor_stability": 0.17999903401770576,
+      "rapr": 0.008895924777325454
+    },
+    {
+      "problem_id": 47,
+      "is_correct_eval_only": false,
+      "null_q90": 0.12193657872265731,
+      "agreement": 0.2461637696575602,
+      "indep_cov": 0.21979409765268515,
+      "specificity": 0.12422719093490289,
+      "anchor_stability": 0.18502927037711325,
+      "rapr": 0.02298566649968342
+    },
+    {
+      "problem_id": 48,
+      "is_correct_eval_only": false,
+      "null_q90": 0.10221451710938605,
+      "agreement": 0.23447626915854586,
+      "indep_cov": 0.19099068894379556,
+      "specificity": 0.1322617520491598,
+      "anchor_stability": 0.1820334621075905,
+      "rapr": 0.02407606462992426
+    },
+    {
+      "problem_id": 48,
+      "is_correct_eval_only": false,
+      "null_q90": 0.10393199811194354,
+      "agreement": 0.19718742193620187,
+      "indep_cov": 0.15878524881305744,
+      "specificity": 0.09325542382425833,
+      "anchor_stability": 0.2147937624615779,
+      "rapr": 0.020030683353161514
+    },
+    {
+      "problem_id": 48,
+      "is_correct_eval_only": false,
+      "null_q90": 0.09450150299313154,
+      "agreement": 0.27312342969443787,
+      "indep_cov": 0.2286203344962849,
+      "specificity": 0.17862192670130633,
+      "anchor_stability": 0.1815690476839695,
+      "rapr": 0.032432213126632
+    },
+    {
+      "problem_id": 49,
+      "is_correct_eval_only": false,
+      "null_q90": 0.11194539121522715,
+      "agreement": 0.19303437833734066,
+      "indep_cov": 0.18155746440389706,
+      "specificity": 0.08108898712211352,
+      "anchor_stability": 0.13814126614081232,
+      "rapr": 0.011201735351124786
+    },
+    {
+      "problem_id": 49,
+      "is_correct_eval_only": true,
+      "null_q90": 0.12872990654757588,
+      "agreement": 0.17068480214460385,
+      "indep_cov": 0.1583886387089741,
+      "specificity": 0.041954895597027975,
+      "anchor_stability": 0.14945202710872865,
+      "rapr": 0.006270244194110906
+    },
+    {
+      "problem_id": 49,
+      "is_correct_eval_only": false,
+      "null_q90": 0.10078716621222648,
+      "agreement": 0.11382847635321196,
+      "indep_cov": 0.10822871992549037,
+      "specificity": 0.013041310140985474,
+      "anchor_stability": 0.16058152978882057,
+      "rapr": 0.0020941935328899065
+    }
+  ]
+}

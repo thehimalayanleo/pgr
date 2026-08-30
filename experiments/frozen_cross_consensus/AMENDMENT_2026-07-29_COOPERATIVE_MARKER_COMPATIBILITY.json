@@ -1,0 +1,38 @@
+{
+  "amendment_id": "FCE-2026-07-29-COOPERATIVE-MARKER-COMPATIBILITY-014",
+  "timestamp": "2026-07-29T14:55:04-07:00",
+  "status_at_amendment": {
+    "online_train_bank_items": 520,
+    "online_train_bank_partial": true,
+    "primary_online_training_started": false,
+    "primary_online_result_created": false,
+    "matched_control_training_started": false
+  },
+  "reason": "semantic-maintrack renamed the environment marker in its unchanged 5 GiB allocate-once-and-sleep cooperative reservation command from SEMANTIC_WALLCLOCK_RESERVATION_BYTES to SEMANTIC_WALLCLOCK_TAKEOVER_BYTES. PGR recognized only the legacy marker, so it would classify the renamed reservation as foreign work, yield its child, and surrender every cooperative window to semantic's measurement runner.",
+  "change": {
+    "file": "run_fcc_online_gate.sh",
+    "old_sha256": "0257d695140b4979afdfd6fda7ece2e286506c2259eabccef53e2d293e618654",
+    "new_sha256": "e55a1d06591141a90231bc25f596dde93b05d9edc4361ff84ad01a53ba1913db",
+    "details": [
+      "Recognize either the legacy RESERVATION_BYTES marker or the current TAKEOVER_BYTES marker, while still requiring semantic-maintrack's exact Python environment and time.sleep(86400).",
+      "Continue rejecting semantic's actual run_5090_semantic_dose_wallclock.py runner and every unrelated CUDA process.",
+      "Add a scheduler interop self-test covering both accepted reservation markers and two rejected non-reservation commands."
+    ]
+  },
+  "validation": [
+    "bash syntax validation passed.",
+    "The scheduler interop self-test passed remotely.",
+    "The authoritative, staging, and remote runner hashes are identical."
+  ],
+  "frozen_unchanged": [
+    "method",
+    "bank contents",
+    "models",
+    "training hyperparameters",
+    "reward sources",
+    "checkpoint semantics",
+    "evaluation",
+    "statistical gates"
+  ],
+  "scope": "Pre-training, pre-outcome scheduler compatibility correction. No PGR worker was active when the idle supervisor adopted the change."
+}

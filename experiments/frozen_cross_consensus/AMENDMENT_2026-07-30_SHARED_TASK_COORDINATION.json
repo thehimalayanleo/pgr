@@ -1,0 +1,47 @@
+{
+  "amendment_id": "FCE-2026-07-30-025",
+  "created_at_local": "2026-07-30T01:02:00-07:00",
+  "scope": "shared-5090 execution coordination only",
+  "trigger": {
+    "attempt": "checkpoint-200 resume after 6144 MiB reservation and 60-second quiescence",
+    "control_launched_at_local": "2026-07-30T00:58:35-07:00",
+    "foreign_process_detected_at_local": "2026-07-30T00:59:05-07:00",
+    "live_step": 205,
+    "foreign_process": {
+      "observed_pid": 3698915,
+      "executable": "/home/ajinkya/global-atom-5090/venv/bin/python",
+      "observed_cuda_memory_mib": 2494,
+      "owner": "active SAE/log-linear-attention Codex task"
+    },
+    "training_archive": "/home/ajinkya/pgr/checkpoints/fce_control_trajectory_fce_permuted_seed42_steps1000_k4_POSTQUIET_FOREIGN_ARCHIVE_20260730_0059",
+    "log_archive": "/home/ajinkya/pgr/logs/fce_matched_control_train_POSTQUIET_FOREIGN_ARCHIVE_20260730_0059.log",
+    "invocation_archive": "/home/ajinkya/pgr/checkpoints/fce_control_live_invocation_POSTQUIET_FOREIGN_ARCHIVE_20260730_0059.json",
+    "supervisor_log_archive": "/home/ajinkya/pgr/logs/fce_gate_supervisor_POSTQUIET_FOREIGN_ARCHIVE_20260730_0059.log",
+    "checkpoint_written": false,
+    "heldout_evaluation_performed": false,
+    "use_for_attribution": false
+  },
+  "diagnosis": {
+    "reservation_and_quiescence_passed": true,
+    "reason": "another active Codex task launched direct CUDA work after the exclusive control had already begun",
+    "why_more_ballast_is_not_used": "increasing ballast enough to make every small direct launch impossible would remove measured FCE headroom and create avoidable OOM risk"
+  },
+  "coordination": {
+    "action": "sent the active SAE/log-linear-attention task a scoped request to stop new 5090 launches until the FCE control final model exists or its reservation is released",
+    "foreign_processes_killed_or_modified": false,
+    "retry_condition": "the current foreign job has exited and the existing 6144 MiB plus 60-second quiescence gate passes again"
+  },
+  "unchanged": [
+    "checkpoint-200 exact resume",
+    "checkpoint-250 bit-for-bit replay requirement",
+    "frozen FCE bank",
+    "uniform within-group reward permutation",
+    "base model",
+    "seed",
+    "training schedule",
+    "heldout evaluation set",
+    "paired attribution gate",
+    "unconditional-control requirement"
+  ],
+  "claim_boundary": "The interrupted step-205 attempt contributes no training or evaluation result. Cross-task coordination changes scheduling only."
+}

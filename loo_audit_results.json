@@ -1,0 +1,92 @@
+{
+  "n_rollouts": 150,
+  "n_groups": 50,
+  "base_acc": 0.14666666666666667,
+  "oracle_pick": 0.32,
+  "arms": {
+    "l2a_self": {
+      "key": "l2a_self",
+      "n_defined": 48,
+      "n_defined_correct": 22,
+      "n_undefined": 102,
+      "n_undefined_correct": 0,
+      "spearman": 0.8634348344036444,
+      "auroc": 1.0,
+      "mean_correct": 0.9999997995977051,
+      "sd_correct": 1.4761491641351108e-07,
+      "mean_wrong": 0.19457590891190787,
+      "sd_wrong": 0.05871242658747808,
+      "pick_skip_undefined": {
+        "pick_acc": 1.0,
+        "n_groups": 16
+      },
+      "pick_fill_zero": {
+        "pick_acc": 1.0,
+        "n_groups": 16
+      }
+    },
+    "l2a_loo": {
+      "key": "l2a_loo",
+      "n_defined": 37,
+      "n_defined_correct": 11,
+      "n_undefined": 113,
+      "n_undefined_correct": 11,
+      "spearman": 0.4153611002218132,
+      "auroc": 0.7622377622377623,
+      "mean_correct": 0.28879086938886056,
+      "sd_correct": 0.12354273224992797,
+      "mean_wrong": 0.19457590891190787,
+      "sd_wrong": 0.05871242658747808,
+      "pick_skip_undefined": {
+        "pick_acc": 0.125,
+        "n_groups": 16
+      },
+      "pick_fill_zero": {
+        "pick_acc": 0.125,
+        "n_groups": 16
+      }
+    },
+    "l2a_cross": {
+      "key": "l2a_cross",
+      "n_defined": 150,
+      "n_defined_correct": 22,
+      "n_undefined": 0,
+      "n_undefined_correct": 0,
+      "spearman": -0.09095759653923438,
+      "auroc": 0.42578125,
+      "mean_correct": 0.14965044292632584,
+      "sd_correct": 0.016918188592616297,
+      "mean_wrong": 0.15434042383270888,
+      "sd_wrong": 0.02063860204546646,
+      "pick_skip_undefined": {
+        "pick_acc": 0.5,
+        "n_groups": 16
+      },
+      "pick_fill_zero": {
+        "pick_acc": 0.5,
+        "n_groups": 16
+      }
+    },
+    "contrast_loo": {
+      "key": "contrast_loo",
+      "n_defined": 30,
+      "n_defined_correct": 8,
+      "n_undefined": 120,
+      "n_undefined_correct": 14,
+      "spearman": -0.08708722321538194,
+      "auroc": 0.44318181818181823,
+      "mean_correct": 0.15320674749091268,
+      "sd_correct": 0.07153929576224308,
+      "mean_wrong": 0.1674423495476896,
+      "sd_wrong": 0.08149645335368716,
+      "pick_skip_undefined": {
+        "pick_acc": 0.25,
+        "n_groups": 16
+      },
+      "pick_fill_zero": {
+        "pick_acc": 0.3125,
+        "n_groups": 16
+      }
+    }
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "timestamp": "2026-07-29T05:26:00-07:00",
+  "selection_outcomes_inspected": false,
+  "primary_method": "Frozen Cross-Evidence GRPO",
+  "baseline_method": "Frozen Cross-Consensus GRPO",
+  "bank": {
+    "dataset": "openai/gsm8k",
+    "selection_split": "test",
+    "selection_start": 0,
+    "selection_n": 500,
+    "target_panel_size": 12,
+    "target_panels": 2,
+    "candidate_panel_size": 4,
+    "temperature": 0.7,
+    "top_p": 0.95,
+    "max_new_tokens": 384,
+    "seed": 20260729,
+    "models": [
+      "HuggingFaceTB/SmolLM2-1.7B-Instruct",
+      "Qwen/Qwen2.5-1.5B-Instruct"
+    ]
+  },
+  "reward": {
+    "cross_panel_requirement": "answer appears in both frozen panels",
+    "clone_gate": "at least two lexical-independent supporting paths",
+    "formula": "sqrt(freq_a * freq_b) * normalized_inverse_prompt_frequency",
+    "current_policy_can_update_bank": false,
+    "gold_stored_or_used_for_reward": false,
+    "auxiliary_reward_or_verifier_model": false
+  },
+  "selection_gate_per_model": {
+    "oracle_gain_captured_minimum": 0.70,
+    "paired_bootstrap_p_gain_le_zero_maximum_exclusive": 0.05,
+    "informative_mixed_reward_group_rate_minimum": 0.30,
+    "bootstrap_draws": 50000
+  },
+  "online_gate": {
+    "authorized_only_if_both_selection_models_pass": true,
+    "train_split_prompts": 1000,
+    "minimum_nonempty_evidence_prompts": 200,
+    "steps": 1000,
+    "num_generations": 4,
+    "seed": 42,
+    "learning_rate": 0.00002,
+    "alpha": 0,
+    "terminal_spread": "constant",
+    "advantage_mode": "group_mean",
+    "heldout_test_start": 500,
+    "heldout_test_n": 500,
+    "decoding": "greedy",
+    "minimum_accuracy_gain": 0.03,
+    "paired_bootstrap_p_gain_le_zero_maximum_exclusive": 0.05
+  },
+  "source_sha256": {
+    "fce_reward.py": "6ab3f52d909c32370a9145a44a90d78edd191aad56c168eaf97fca243c642d02",
+    "fcc_reward.py": "a2155fdce4dfd5d4eddd519ca72be13d90c216c150d92dfc33f61ffeb75d5795",
+    "build_fcc_bank.py": "7893e6a3d96ecc74d9cbd50faad44db526b3ca9a3ed10a21d5784caf2c82b411",
+    "evaluate_fce_bank.py": "a058ba1d08395786902c2c1a74ed58c0762425f289470e3168e9824f7336f178",
+    "evaluate_fcc_bank.py": "12f7021da1abee8088a70d681c08fcfe2101da24361f791705aafbe4b2ed478f",
+    "fcc_step_pgr_trainer.py": "20c1b502a2a9ccec60923b09e63261feea02bd31b7454d33f4704e2bf565e2f4",
+    "local_fcc_train.py": "2e84e326e63d4adfc305ff96997ee11b1d346335215803f092a066f9a388ea6e",
+    "run_fcc_selection_gate.sh": "d37038804772eec14f97b06d84f2f44d10490845d441513f511e1aa4abdf22a2",
+    "run_fcc_online_gate.sh": "8d0ed69a2d7b8b71bbe731e078fb63524c0e2352f1413f37e0e2d51a26d18440",
+    "evaluate_fcc_online.py": "f8b3c8fd47c0255049fd1eddae20f7da6c7855da38fd1f45d761a3cb554d7593",
+    "analyze_fcc_online.py": "39458db9ec4638e33be0b201881a98f4bf7af5ea1fefbc4fcde60db20193cdb7"
+  }
+}

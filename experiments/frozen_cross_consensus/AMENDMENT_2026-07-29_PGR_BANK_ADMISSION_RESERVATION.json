@@ -1,0 +1,45 @@
+{
+  "amendment_id": "FCE-2026-07-29-PGR-BANK-ADMISSION-RESERVATION-018",
+  "timestamp": "2026-07-29T16:09:00-07:00",
+  "status_at_amendment": {
+    "online_train_bank_items": 560,
+    "online_train_bank_partial": true,
+    "primary_online_training_started": false,
+    "primary_online_result_created": false,
+    "matched_control_training_started": false
+  },
+  "reason": "The unrelated Global-Atom queue admits a job after three seconds with at least 20000 MiB free. The FCE supervisor could pass its own admission check, then spend about 25 seconds loading the bank worker on CPU before that worker allocated CUDA memory. This allowed Global-Atom to enter during the gap and forced repeated safe yields before a bank item could be generated.",
+  "change": {
+    "file": "run_fcc_online_gate.sh",
+    "old_sha256": "230499b92b6a47fc4455759cf97e803b672ca35d6c5d8756b24b5598f5d9c7e2",
+    "new_sha256": "b87933fa9df1aa63bc230f1022842672ff8b43b1ec07a07c09424cbb0ad649d4",
+    "details": [
+      "Only during gold-free bank construction, allocate a temporary CUDA byte tensor immediately after the existing capacity gate.",
+      "Size the guard to target 18500 MiB free, capped at 15360 MiB, so the unrelated 20000 MiB queue cannot enter during model loading.",
+      "Retain the guard for the complete atomic bank-worker invocation; release it after the worker exits or yields.",
+      "Maintain at least 12000 MiB free while the guard is active and yield immediately if any unrelated CUDA process appears.",
+      "Ignore the exact guard PID in FCE foreign-process detection and identify it to the cooperative semantic scheduler with a dedicated command marker.",
+      "Clean up both the guard and active bank child on supervisor exit, interrupt, or termination.",
+      "Do not use the guard for base evaluation, FCE training, trained evaluation, or matched-control training."
+    ]
+  },
+  "validation": [
+    "Bash syntax validation passed locally and remotely.",
+    "The scheduler self-test passed locally and remotely, including reservation sizing boundaries.",
+    "The authoritative, staging, and remote runner hashes are identical.",
+    "The prior idle supervisor was stopped only after confirming that no FCE bank worker or admission guard was active."
+  ],
+  "claim_boundary": "This is a pre-training resource-admission correction. The guard computes no reward, reads no gold label, changes no bank target, and contributes no policy update. Live coexistence and atomic item completion still require observation.",
+  "frozen_unchanged": [
+    "method",
+    "existing bank contents",
+    "models",
+    "sampling seeds",
+    "training hyperparameters",
+    "reward sources",
+    "checkpoint semantics",
+    "evaluation",
+    "statistical gates"
+  ],
+  "scope": "Pre-training, pre-outcome scheduling correction at bank item 560. No PGR worker or checkpoint write was active when the idle supervisor adopted the change."
+}

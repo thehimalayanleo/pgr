@@ -1,0 +1,50 @@
+{
+  "amendment_id": "FCE-2026-07-30-024",
+  "created_at_local": "2026-07-30T00:31:00-07:00",
+  "scope": "matched-control GPU admission safety only",
+  "trigger": {
+    "attempt": "certified checkpoint-200 resume attempt",
+    "control_launched_at_local": "2026-07-30T00:28:48-07:00",
+    "foreign_process_detected_at_local": "2026-07-30T00:29:03-07:00",
+    "live_step": 201,
+    "foreign_process": {
+      "pid": 3688546,
+      "executable": "/home/ajinkya/global-atom-5090/venv/bin/python",
+      "script": "qwen_ruler_histogram_eval.py",
+      "observed_cuda_memory_mib": 2664
+    },
+    "training_archive": "/home/ajinkya/pgr/checkpoints/fce_control_trajectory_fce_permuted_seed42_steps1000_k4_STARTUP_RACE_ARCHIVE_20260730_0029",
+    "log_archive": "/home/ajinkya/pgr/logs/fce_matched_control_train_STARTUP_RACE_ARCHIVE_20260730_0029.log",
+    "invocation_archive": "/home/ajinkya/pgr/checkpoints/fce_control_live_invocation_STARTUP_RACE_ARCHIVE_20260730_0029.json",
+    "supervisor_log_archive": "/home/ajinkya/pgr/logs/fce_gate_supervisor_STARTUP_RACE_ARCHIVE_20260730_0029.log",
+    "checkpoint_written": false,
+    "heldout_evaluation_performed": false,
+    "use_for_attribution": false
+  },
+  "diagnosis": {
+    "previous_reservation_mib": 4096,
+    "simultaneous_launcher_delay_seconds": 15,
+    "reason": "the direct Qwen launcher entered after the one-shot post-reservation check but before the FCE model had occupied its steady-state memory"
+  },
+  "revised_admission": {
+    "reservation_mib": 6144,
+    "post_reservation_quiescence_seconds": 60,
+    "quiescence_definition": "no CUDA process other than the owned reservation for twelve consecutive five-second polls",
+    "on_foreign_process": "release the reservation and return to the wait queue without launching FCE",
+    "reservation_lifetime": "retain through matched-control training and heldout evaluation",
+    "reason": "flush simultaneous after-idle launchers before model startup and leave insufficient steady-state memory for the observed 2664 MiB foreign job once FCE is resident"
+  },
+  "unchanged": [
+    "checkpoint-200 exact resume",
+    "checkpoint-250 bit-for-bit replay requirement",
+    "frozen FCE bank",
+    "uniform within-group reward permutation",
+    "base model",
+    "seed",
+    "training schedule",
+    "heldout evaluation set",
+    "paired attribution gate",
+    "unconditional-control requirement"
+  ],
+  "claim_boundary": "The interrupted step-201 attempt is operational evidence only. It contributes no training or evaluation result."
+}

@@ -1,0 +1,25 @@
+{
+  "amendment_id": "FCE-2026-07-29-SINGLE-ITEM-SAVE-011",
+  "timestamp": "2026-07-29T13:46:33-07:00",
+  "status_at_amendment": {
+    "online_train_bank_items": 335,
+    "online_train_bank_partial": true,
+    "primary_online_training_started": false,
+    "primary_online_result_created": false,
+    "matched_control_training_started": false
+  },
+  "reason": "Immediate admission acquired idle windows, but two manually launched foreign jobs arrived after 5 to 15 seconds. PGR yielded safely before the existing five-prompt atomic-save boundary, so valid generation work in those short slices was discarded.",
+  "change": {
+    "file": "run_fcc_online_gate.sh",
+    "old_sha256": "ff3e8a17e90c753d79cf798fca9e2b3402f736d74879305d0ec949d6070efb6d",
+    "new_sha256": "a2c6caf6d1421f90a31f3a7b85b8eea8fbb7f0b8edb5d1eb0ff30ce6ff7c6984",
+    "details": "Pass --save-every 1 to the resumable bank builder instead of using its default five-item cadence."
+  },
+  "invariants": [
+    "Each item still uses the same prompt-derived panel seeds.",
+    "Atomic replacement still exposes only complete JSON.",
+    "Final evidence is still attached only after all 1000 raw items exist.",
+    "The change cannot alter a completion, reward, training example, or statistical result."
+  ],
+  "scope": "Pre-outcome durability correction for highly preemptible bank generation."
+}

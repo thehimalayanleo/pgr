@@ -1,0 +1,37 @@
+{
+  "amendment_id": "FCE-2026-07-29-ADMISSION-FAIRNESS-009",
+  "timestamp": "2026-07-29T13:19:37-07:00",
+  "status_at_amendment": {
+    "online_train_bank_items": 280,
+    "online_train_bank_partial": true,
+    "primary_online_training_started": false,
+    "primary_online_result_created": false,
+    "matched_control_training_started": false,
+    "duplicate_pgr_supervisors_removed": 1,
+    "remaining_pgr_supervisors": 1
+  },
+  "reason": "Read-only scheduler inspection showed multiple unrelated after-idle queues admitting work after 30 to 60 idle seconds, while PGR required two observations 60 seconds apart. PGR therefore could not acquire an idle window even after repeatedly yielding cleanly. This was scheduler starvation, not GPU unavailability.",
+  "change": {
+    "file": "run_fcc_online_gate.sh",
+    "old_sha256": "53bcf57e8bb316ec977c012b1c2f8ca666b54b84ad612e66dfc6cb1ed4590bb9",
+    "new_sha256": "08368192424c87f7ead32a4fa7ec4c2b1bf29410813e73d308ce2ac25bae8226",
+    "details": [
+      "require four clean capacity samples five seconds apart instead of two samples sixty seconds apart",
+      "retain the same 18 GiB host-RAM and 24 GiB free-VRAM thresholds",
+      "retain the five-second active-child foreign-process monitor",
+      "never launch while unrelated GPU work is resident"
+    ]
+  },
+  "safety": "The shorter gate lets PGR take a genuinely idle turn before longer-delay queues relaunch. It does not terminate, modify, or co-run with unrelated work; any foreign process already resident still resets admission to zero.",
+  "frozen_unchanged": [
+    "method",
+    "bank",
+    "models",
+    "training hyperparameters",
+    "reward sources",
+    "checkpoint semantics",
+    "evaluation",
+    "statistical gates"
+  ],
+  "scope": "Pre-outcome resource-scheduling correction made with no PGR child active."
+}

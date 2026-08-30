@@ -1,0 +1,43 @@
+{
+  "amendment_id": "FCE-2026-07-29-COOPERATIVE-MARKER-FAMILY-015",
+  "timestamp": "2026-07-29T15:04:18-07:00",
+  "status_at_amendment": {
+    "online_train_bank_items": 520,
+    "online_train_bank_partial": true,
+    "primary_online_training_started": false,
+    "primary_online_result_created": false,
+    "matched_control_training_started": false
+  },
+  "reason": "After the wall-clock semantic phase completed, its queued WikiText phase used the same exact 5 GiB allocate-once-and-sleep reservation protocol under the marker SEMANTIC_QUEUE_RESERVATION_BYTES. Restricting PGR to the two previously observed wall-clock marker strings would again leave the idle reservation classified as foreign after the real WikiText runner exited.",
+  "change": {
+    "file": "run_fcc_online_gate.sh",
+    "old_sha256": "e55a1d06591141a90231bc25f596dde93b05d9edc4361ff84ad01a53ba1913db",
+    "new_sha256": "ade8e656a5c76dab07db32218295792126c162fc441ccb70241ae5f3b23ad7d1",
+    "details": [
+      "Recognize the semantic reservation marker family SEMANTIC_*RESERVATION_BYTES plus the existing TAKEOVER marker.",
+      "Continue requiring semantic-maintrack's exact Python environment and the exact time.sleep(86400) behavior.",
+      "Add positive coverage for SEMANTIC_QUEUE_RESERVATION_BYTES and a negative case for a similarly named non-reservation marker."
+    ]
+  },
+  "validation": [
+    "bash syntax validation passed.",
+    "The expanded scheduler interop self-test passed locally and remotely.",
+    "The authoritative, staging, and remote runner hashes are identical."
+  ],
+  "safety": [
+    "The active WikiText runner remains foreign and caused PGR to yield correctly.",
+    "Every semantic runner without the exact sleeping-reservation signature remains foreign.",
+    "Every unrelated CUDA process remains foreign."
+  ],
+  "frozen_unchanged": [
+    "method",
+    "bank contents",
+    "models",
+    "training hyperparameters",
+    "reward sources",
+    "checkpoint semantics",
+    "evaluation",
+    "statistical gates"
+  ],
+  "scope": "Pre-training, pre-outcome scheduler compatibility correction. The bank worker had already yielded and no PGR checkpoint write was active when the supervisor adopted the change."
+}

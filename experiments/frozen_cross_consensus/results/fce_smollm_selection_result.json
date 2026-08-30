@@ -1,0 +1,32 @@
+{
+  "method": "Frozen Cross-Evidence GRPO",
+  "model": "HuggingFaceTB/SmolLM2-1.7B-Instruct",
+  "n": 500,
+  "panel_size": 12,
+  "candidate_panel_size": 4,
+  "evidence_coverage": 0.874,
+  "top_evidence_precision_when_covered": 0.61441647597254,
+  "random_candidate_accuracy": 0.2605,
+  "fce_pick_accuracy": 0.484,
+  "oracle_candidate_accuracy": 0.55,
+  "fce_minus_random": 0.22349999999999998,
+  "gain_ci95": [
+    0.196,
+    0.251
+  ],
+  "p_gain_le_zero": 0.0,
+  "oracle_gain_captured": 0.7720207253886009,
+  "captured_ci95": [
+    0.7068056171798739,
+    0.834224598930481
+  ],
+  "reinforcement_event_rate": 0.62,
+  "informative_group_rate": 0.566,
+  "wrong_target_reinforcement_rate": 0.149,
+  "wrong_given_reinforcement": 0.2403225806451613,
+  "viability_gate": {
+    "captures_at_least_70pct_oracle_gain": true,
+    "paired_bootstrap_p_lt_0_05": true,
+    "informative_group_rate_at_least_0_30": true
+  }
+}

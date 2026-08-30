@@ -22,9 +22,15 @@ REGRESSION GUARANTEE:
     GRPO trajectory-level advantage. See `validate_regression()`.
 """
 
+import hashlib
+import json
 import re
 import numpy as np
 from transformers import PreTrainedTokenizer
+from fcc_reward import (
+    extract_answer as _extract_frozen_answer,
+    normalize_answer as _normalize_frozen_answer,
+)
 
 try:
     import torch
@@ -184,62 +190,12 @@ def omp_step_rewards(
 
 def _norm_num(s: str) -> str:
     """Normalize a numeric answer string for comparison (strip $, commas, trailing .)."""
-    cleaned = (
-        s.strip()
-        .replace("\\$", "")
-        .replace("$", "")
-        .replace("\\,", "")
-        .replace(",", "")
-        .replace("\\%", "")
-        .replace("%", "")
-        .rstrip(".")
-        .strip()
-    )
-    numbers = re.findall(r"-?[0-9][0-9]*\.?[0-9]*", cleaned)
-    if len(numbers) == 1:
-        return numbers[0].rstrip(".")
-    return cleaned
+    return _normalize_frozen_answer(s)
 
 
-def extract_answer(text: str) -> str | None:
-    """Model-agnostic answer extraction, in priority order:
-        1. \\boxed{...}   (Qwen emits this reliably)
-        2. #### N         (GSM8K native format; SmolLM2/Llama emit this)
-        3. last number    (fallback)
-
-    Rationale: the \\boxed-only extractor undercounted SmolLM2 by 7x (3% vs 22%
-    true GSM8K accuracy) because SmolLM2 answers in #### / plain-number format.
-    \\boxed is tried FIRST, so Qwen results are byte-identical to before this change.
-    """
-    # 1. brace-balanced \boxed{...}
-    idx = text.find("\\boxed{")
-    if idx != -1:
-        i = idx + len("\\boxed{")
-        depth, out = 1, []
-        while i < len(text) and depth > 0:
-            c = text[i]
-            if c == "{":
-                depth += 1; out.append(c)
-            elif c == "}":
-                depth -= 1
-                if depth > 0:
-                    out.append(c)
-            else:
-                out.append(c)
-            i += 1
-        if depth == 0:
-            return _norm_num("".join(out))
-
-    # 2. GSM8K native  #### N
-    m = re.findall(r"####\s*(-?[0-9][0-9,]*\.?[0-9]*)", text)
-    if m:
-        return _norm_num(m[-1])
-
-    # 3. last number anywhere (GSM8K-standard fallback)
-    m = re.findall(r"-?[0-9][0-9,]*\.?[0-9]*", text)
-    if m:
-        return _norm_num(m[-1])
-    return None
+def extract_answer(text: str, answer_mode: str = "numeric") -> str | None:
+    """Canonical task-aware extractor shared with frozen bank construction."""
+    return _extract_frozen_answer(text, answer_mode)
 
 
 # ─────────────────────────────────────────────────────────────────────────
@@ -287,11 +243,15 @@ class StepLevelGRPOTrainer(GRPOTrainer):
         # ── Verifier-free reward source (the "replace RLVR" axis) ──
         # Where does the binary terminal come from?
         #   "gold"     : terminal = 1[pred == gold]              (RLVR; needs a verifier)
-        #   "majority" : terminal = 1[pred == group plurality]   (verifier-free, TTRL-style
-        #                self-consistency; gold NEVER touched in training, only logged)
+        #   "majority" : terminal = 1[pred == group plurality]   (verifier-free,
+        #                TTRL-style self-consistency; gold is absent in training)
         #   "random"   : terminal ~ Bernoulli(random_reward_p)   (spurious-reward control:
         #                if this moves the model as much as "majority", the lift is Qwen
         #                prior amplification, not signal -- cf. Shao et al. 2025)
+        #   "fce_permuted": matched FCE control. It preserves each group's exact
+        #                frozen reward multiset but uniformly shuffles assignment
+        #                across trajectories, breaking answer/reward alignment in
+        #                expectation without constructing an adversarial anti-reward.
         #   "consensus": terminal = independence-weighted OMP consensus, in [0,1].
         #                The pursuit method. Strictly LESS supervision than "majority":
         #                needs no gold, no labels, AND no parseable answer -- only
@@ -305,6 +265,10 @@ class StepLevelGRPOTrainer(GRPOTrainer):
         random_reward_p: float = 0.5,
         consensus_lambda: float = 1.0,   # exponent on the independence gate
         consensus_ngram: int = 3,
+        # Frozen Cross-Consensus: two initial-policy panels build a target once;
+        # current rollouts can score against it but can never change it.
+        fcc_bank_path: str | None = None,
+        answer_mode: str = "numeric",
         # Hybrid orthogonal reward (trajectory + per-step signals independent of correctness)
         use_hybrid: bool = False,
         hybrid_terminal_weight: float = 0.7,
@@ -360,14 +324,66 @@ class StepLevelGRPOTrainer(GRPOTrainer):
         self.random_reward_p = random_reward_p
         self.consensus_lambda = consensus_lambda
         self.consensus_ngram = consensus_ngram
-        assert reward_source in ("gold", "majority", "random", "consensus"), \
+        self.fcc_bank_path = fcc_bank_path
+        self._fce_answer_mode = answer_mode
+        self._fcc_targets: dict[str, str] = {}
+        self._fce_scores: dict[str, dict[str, float]] = {}
+        if fcc_bank_path is not None:
+            with open(fcc_bank_path) as bank_file:
+                bank = json.load(bank_file)
+            if bank.get("partial"):
+                raise ValueError("FCC bank is partial; refusing to train")
+            if bank.get("gold_stored") is not False:
+                raise ValueError("FCC bank must explicitly declare gold_stored=false")
+            bank_answer_mode = bank.get("answer_mode", "numeric")
+            if bank_answer_mode != self._fce_answer_mode:
+                raise ValueError(
+                    "FCC bank answer mode mismatch: "
+                    f"{bank_answer_mode} != {self._fce_answer_mode}"
+                )
+            for item in bank.get("items", []):
+                frozen = item.get("frozen_target", {})
+                if frozen.get("accepted") and frozen.get("target") is not None:
+                    self._fcc_targets[item["prompt_hash"]] = str(frozen["target"])
+                evidence = item.get("frozen_evidence", {})
+                scores = evidence.get("scores", {})
+                if scores:
+                    self._fce_scores[item["prompt_hash"]] = {
+                        str(answer): float(score)
+                        for answer, score in scores.items()
+                    }
+        assert reward_source in (
+            "gold",
+            "majority",
+            "random",
+            "consensus",
+            "fcc",
+            "fce",
+            "fce_permuted",
+        ), \
             f"Unknown reward_source: {reward_source}"
+        if reward_source == "fcc" and not self._fcc_targets:
+            raise ValueError("reward_source='fcc' requires a complete bank with accepted targets")
+        if reward_source in ("fce", "fce_permuted") and not self._fce_scores:
+            raise ValueError(
+                f"reward_source='{reward_source}' requires a complete bank "
+                "with frozen evidence"
+            )
         # Deterministic RNG for the "random" control (seeded off the run seed).
         self._reward_rng = np.random.RandomState(
             getattr(getattr(self, "args", None), "seed", 0) or 0
         )
 
     # ── helpers ──────────────────────────────────────────────────────────
+
+    def _exact_trajectory_mode(self) -> bool:
+        return (
+            self.alpha == 0
+            and self.terminal_spread == "constant"
+            and not self.use_contrastive
+            and not self.use_l2a
+            and not self.use_hybrid
+        )
 
     def _compute_raw_step_rewards(
         self, completion_text: str
@@ -475,10 +491,81 @@ class StepLevelGRPOTrainer(GRPOTrainer):
             for raw, terminal in zip(raw_step_rewards, terminals)
         ]
 
+    @staticmethod
+    def _fcc_prompt_hash(prompt) -> str:
+        text = prompt if isinstance(prompt, str) else json.dumps(prompt, sort_keys=True)
+        return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+    def _fcc_group_terminals(
+        self,
+        prompt,
+        predictions: list[str | None],
+    ) -> tuple[list[float], str | None]:
+        """Score a current group against a frozen target without updating the bank."""
+        target = self._fcc_targets.get(self._fcc_prompt_hash(prompt))
+        if target is None:
+            return [0.0] * len(predictions), None
+        return [
+            float(prediction is not None and prediction == target)
+            for prediction in predictions
+        ], target
+
+    def _fce_group_terminals(
+        self,
+        prompt,
+        predictions: list[str | None],
+    ) -> tuple[list[float], dict[str, float] | None]:
+        """Score a current group against immutable cross-panel evidence."""
+        scores = self._fce_scores.get(self._fcc_prompt_hash(prompt))
+        if scores is None:
+            return [0.0] * len(predictions), None
+        return [
+            float(scores.get(prediction, 0.0)) if prediction is not None else 0.0
+            for prediction in predictions
+        ], scores
+
+    def _permuted_fce_terminals(
+        self,
+        prompt,
+        terminals: list[float],
+        group_index: int,
+    ) -> list[float]:
+        """Break FCE alignment while preserving the exact group reward multiset."""
+        if len(terminals) <= 1:
+            return list(terminals)
+        prompt_key = self._fcc_prompt_hash(prompt)
+        global_step = int(getattr(getattr(self, "state", None), "global_step", 0))
+        run_seed = int(getattr(getattr(self, "args", None), "seed", 0) or 0)
+        material = (
+            f"{run_seed}:{global_step}:{group_index}:{prompt_key}:fce-permuted"
+        ).encode("utf-8")
+        seed = int.from_bytes(
+            hashlib.sha256(material).digest()[:8],
+            "big",
+        )
+        permutation = np.random.default_rng(seed).permutation(len(terminals))
+        values = np.asarray(terminals, dtype=np.float64)
+        return list(values[permutation])
+
+    def _gold_answers_for_batch(self, inputs: list[dict]) -> list[str | None]:
+        """Repeat labels only for gold RLVR; all verifier-free methods are blind."""
+        repeated: list[str | None] = []
+        for ex in inputs:
+            gold = (
+                None
+                if self.reward_source != "gold"
+                else extract_answer(
+                    ex.get("answer", ""),
+                    self._fce_answer_mode,
+                )
+            )
+            repeated.extend([gold] * self.num_generations)
+        return repeated
+
     def _compute_per_step_rewards(self, completion_text: str, gold_answer: str | None):
         """Compatibility wrapper for the gold-terminal path."""
         raw, spans_text_only = self._compute_raw_step_rewards(completion_text)
-        pred = extract_answer(completion_text)
+        pred = extract_answer(completion_text, self._fce_answer_mode)
         is_correct = pred is not None and gold_answer is not None and pred == gold_answer
         blended = self._blend_step_rewards(raw, 1.0 if is_correct else 0.0)
         return blended, spans_text_only
@@ -810,10 +897,8 @@ class StepLevelGRPOTrainer(GRPOTrainer):
 
         for b in range(B):
             sr = step_advantages[b]
-            # Exact trajectory-GRPO regression path. When every identified step has
-            # the same scalar advantage, segmentation carries no information and
-            # must not zero unmatched/trailing tokens. Standard GRPO applies the
-            # rollout advantage to every generated token.
+            # Exact trajectory-level GRPO: a constant rollout advantage applies
+            # to every generated token. Step segmentation must not create holes.
             if len(sr) > 0 and np.allclose(sr, sr[0]):
                 A[b, :] = float(sr[0])
                 continue
@@ -908,21 +993,25 @@ class StepLevelGRPOTrainer(GRPOTrainer):
 
         # ── Compute per-step rewards (PGR-specific) ──────────────────────
         # Each input row gets repeated num_generations times to align with completions.
-        gold_answers_repeated = []
-        for ex in inputs:
-            gold = extract_answer(ex.get("answer", ""))
-            gold_answers_repeated.extend([gold] * self.num_generations)
+        # FCC's training path is structurally gold-blind. Even if a caller
+        # accidentally leaves an answer field in the dataset, do not parse it.
+        gold_answers_repeated = self._gold_answers_for_batch(inputs)
 
         per_rollout_raw_step_rewards = []
         per_rollout_step_texts = []
         per_rollout_terminals = []      # the terminal that TRAINS the policy
-        per_rollout_gold_correct = []   # 1[pred == gold]; for logging only, never trains
+        per_rollout_gold_correct = []   # populated only for gold RLVR
         per_rollout_preds = []
         for text, gold in zip(completions, gold_answers_repeated):
-            raw_sr, step_texts = self._compute_raw_step_rewards(text)
+            if self._exact_trajectory_mode():
+                # Pure GRPO needs only one scalar per rollout. Avoid even loading
+                # or invoking the optional OMP encoder/dictionary reward machinery.
+                raw_sr, step_texts = np.array([0.0]), []
+            else:
+                raw_sr, step_texts = self._compute_raw_step_rewards(text)
             per_rollout_raw_step_rewards.append(raw_sr)
             per_rollout_step_texts.append(step_texts)
-            pred = extract_answer(text)
+            pred = extract_answer(text, self._fce_answer_mode)
             per_rollout_preds.append(pred)
             is_correct = (pred is not None and gold is not None and pred == gold)
             per_rollout_gold_correct.append(1.0 if is_correct else 0.0)
@@ -930,16 +1019,53 @@ class StepLevelGRPOTrainer(GRPOTrainer):
 
         # ── Verifier-free reward source ──────────────────────────────────
         # Replace the gold-derived terminal with a label that needs no verifier.
-        # This is the "replace RLVR" lever. Gold is retained ONLY to log how
-        # good the pseudo-labels are (pseudo_label_acc); it never enters the
-        # loss when reward_source != "gold".
+        # This is the "replace RLVR" lever. In every non-gold mode the dataset
+        # answer is stripped and this trainer returns no gold value at all.
+        fcc_groups_total = 0
+        fcc_groups_accepted = 0
+        fcc_groups_informative = 0
+        fce_groups_total = 0
+        fce_groups_covered = 0
+        fce_groups_informative = 0
+        fcc_target_gold_correct: list[float] = []
         if self.reward_source != "gold":
             G = self.num_generations
             n_groups = len(per_rollout_preds) // G
             for g in range(n_groups):
                 lo, hi = g * G, (g + 1) * G
                 preds_g = per_rollout_preds[lo:hi]
-                if self.reward_source == "majority":
+                if self.reward_source == "fcc":
+                    fcc_groups_total += 1
+                    terminals, target = self._fcc_group_terminals(
+                        prompts_raw[g],
+                        preds_g,
+                    )
+                    per_rollout_terminals[lo:hi] = terminals
+                    if target is not None:
+                        fcc_groups_accepted += 1
+                        if terminals and max(terminals) > min(terminals):
+                            fcc_groups_informative += 1
+                        gold = gold_answers_repeated[lo]
+                        if gold is not None:
+                            fcc_target_gold_correct.append(float(target == gold))
+                elif self.reward_source in ("fce", "fce_permuted"):
+                    fce_groups_total += 1
+                    terminals, scores = self._fce_group_terminals(
+                        prompts_raw[g],
+                        preds_g,
+                    )
+                    if self.reward_source == "fce_permuted":
+                        terminals = self._permuted_fce_terminals(
+                            prompts_raw[g],
+                            terminals,
+                            g,
+                        )
+                    per_rollout_terminals[lo:hi] = terminals
+                    if scores is not None:
+                        fce_groups_covered += 1
+                        if terminals and max(terminals) > min(terminals):
+                            fce_groups_informative += 1
+                elif self.reward_source == "majority":
                     # TTRL-style: plurality answer in the group is the pseudo-gold.
                     from collections import Counter
                     valid = [p for p in preds_g if p is not None]
@@ -993,16 +1119,36 @@ class StepLevelGRPOTrainer(GRPOTrainer):
             for reward in per_rollout_step_rewards
         ]
 
-        # Diagnostics: pseudo-label accuracy vs gold, and reward density.
+        # Diagnostics: reward density. Verifier-free training examples contain
+        # no gold, so they cannot silently compute pseudo-label accuracy.
         _gc = np.array(per_rollout_gold_correct)
         _tm = np.array(per_rollout_terminals)
         if len(_tm):
-            # agreement between the TRAINING label and the true gold label
-            self._metrics.setdefault("pseudo_label_acc", []).append(
-                float((_tm == _gc).mean())
-            )
             self._metrics.setdefault("terminal_pos_rate", []).append(float(_tm.mean()))
-            self._metrics.setdefault("gold_pos_rate", []).append(float(_gc.mean()))
+            if any(answer is not None for answer in gold_answers_repeated):
+                self._metrics.setdefault("pseudo_label_acc", []).append(
+                    float((_tm == _gc).mean())
+                )
+                self._metrics.setdefault("gold_pos_rate", []).append(float(_gc.mean()))
+            if self.reward_source == "fcc":
+                self._metrics.setdefault("fcc_bank_coverage", []).append(
+                    fcc_groups_accepted / max(fcc_groups_total, 1)
+                )
+                self._metrics.setdefault("fcc_informative_group_rate", []).append(
+                    fcc_groups_informative / max(fcc_groups_total, 1)
+                )
+                if fcc_target_gold_correct:
+                    # Evaluation-only diagnostic. This never enters any reward array.
+                    self._metrics.setdefault("fcc_target_gold_accuracy", []).append(
+                        float(np.mean(fcc_target_gold_correct))
+                    )
+            if self.reward_source in ("fce", "fce_permuted"):
+                self._metrics.setdefault("fce_bank_coverage", []).append(
+                    fce_groups_covered / max(fce_groups_total, 1)
+                )
+                self._metrics.setdefault("fce_informative_group_rate", []).append(
+                    fce_groups_informative / max(fce_groups_total, 1)
+                )
 
         # ── Contrastive per-step credit from GRPO group structure ────────
         n_contrast_groups_used = 0
@@ -1045,7 +1191,7 @@ class StepLevelGRPOTrainer(GRPOTrainer):
             for i, (text, gold, steps) in enumerate(
                 zip(completions, gold_answers_repeated, per_rollout_step_texts)
             ):
-                pred = extract_answer(text)
+                pred = extract_answer(text, self._fce_answer_mode)
                 is_correct = (pred is not None and gold is not None and pred == gold)
                 terminal = 1.0 if is_correct else 0.0
                 if not steps:
@@ -1195,14 +1341,6 @@ def validate_constant_token_coverage():
     print("✓ constant trajectory advantage covers all generated tokens with zero within-rollout variance")
 
 
-def validate_answer_canonicalization():
-    """Trainer and evaluator must agree on common boxed GSM8K answer forms."""
-    assert extract_answer(r"The result is \boxed{\$18,000}.") == "18000"
-    assert extract_answer(r"The result is \boxed{18,000 dollars}.") == "18000"
-    assert extract_answer(r"The result is \boxed{25\%}.") == "25"
-    print("✓ boxed currency, comma, percent, and unit answers canonicalize consistently")
-
-
 def validate_terminal_spread():
     """Validate that terminal_spread modes redistribute the binary terminal correctly."""
     step_rewards = np.array([0.1, 0.5, 0.3, 0.2])     # raw OMP rewards
@@ -1264,6 +1402,136 @@ def validate_reward_source_rewire():
         "reward_source changed diagnostics but not loss rewards"
     )
     print("✓ reward_source terminals rebuild the exact step-reward arrays used by the loss")
+
+
+def validate_fcc_frozen_target():
+    """Current-group outputs can change rewards but cannot mutate the FCC target."""
+    trainer = object.__new__(StepLevelGRPOTrainer)
+    prompt = "Solve this problem"
+    key = trainer._fcc_prompt_hash(prompt)
+    trainer._fcc_targets = {key: "18"}
+
+    rewards, target = trainer._fcc_group_terminals(
+        prompt,
+        ["18", "19", None, "18"],
+    )
+    assert target == "18"
+    assert rewards == [1.0, 0.0, 0.0, 1.0]
+
+    collapsed, target_after = trainer._fcc_group_terminals(
+        prompt,
+        ["999"] * 8,
+    )
+    assert collapsed == [0.0] * 8
+    assert target_after == "18"
+    assert trainer._fcc_targets[key] == "18"
+    print("✓ FCC current-group collapse cannot move the frozen target")
+
+
+def validate_fce_frozen_scores():
+    """Current outputs can query but cannot mutate frozen FCE scores."""
+    trainer = object.__new__(StepLevelGRPOTrainer)
+    prompt = "Solve this other problem"
+    key = trainer._fcc_prompt_hash(prompt)
+    trainer._fce_scores = {key: {"18": 0.4, "21": 0.1}}
+    rewards, scores = trainer._fce_group_terminals(
+        prompt,
+        ["18", "21", "999", None],
+    )
+    assert rewards == [0.4, 0.1, 0.0, 0.0]
+    assert scores == {"18": 0.4, "21": 0.1}
+    before = dict(trainer._fce_scores[key])
+    collapsed, _ = trainer._fce_group_terminals(prompt, ["999"] * 8)
+    assert collapsed == [0.0] * 8
+    assert trainer._fce_scores[key] == before
+    print("✓ FCE current-group collapse cannot move frozen evidence scores")
+
+
+def validate_fce_permuted_control():
+    """Matched control preserves signal density but breaks trajectory alignment."""
+    trainer = object.__new__(StepLevelGRPOTrainer)
+    trainer.state = type("State", (), {"global_step": 17})()
+    trainer.args = type("Args", (), {"seed": 42})()
+    prompt = "Solve step by step:\nA test prompt.\n\nSolution:"
+    terminals = [0.4, 0.1, 0.0, 0.0]
+    permuted = trainer._permuted_fce_terminals(prompt, terminals, 0)
+    repeated = trainer._permuted_fce_terminals(prompt, terminals, 0)
+    assert sorted(permuted) == sorted(terminals)
+    assert permuted != terminals
+    assert repeated == permuted
+    assert trainer._permuted_fce_terminals(
+        prompt,
+        [0.0, 0.0, 0.0, 0.0],
+        0,
+    ) == [0.0, 0.0, 0.0, 0.0]
+    print("✓ matched FCE control preserves rewards while breaking trajectory alignment")
+
+
+def validate_fce_continuous_loss_path():
+    """Frozen continuous scores must preserve their ranking through GRPO normalization."""
+    trainer = object.__new__(StepLevelGRPOTrainer)
+    trainer.alpha = 0.0
+    trainer.terminal_spread = "constant"
+    trainer.gamma = 1.0
+    trainer.gamma_total = None
+    trainer.step_advantage_mode = "group_mean"
+    trainer.top_k_steps = None
+    trainer.advantage_clip = 5.0
+    raw = [np.array([9.0], dtype=np.float32) for _ in range(4)]
+    loss_rewards = trainer._apply_terminal_source(raw, [0.4, 0.1, 0.0, 0.0])
+    assert np.allclose(
+        [float(reward[0]) for reward in loss_rewards],
+        [0.4, 0.1, 0.0, 0.0],
+    )
+    advantages = trainer._compute_step_advantages(loss_rewards, num_generations=4)
+    values = [float(advantage[0]) for advantage in advantages]
+    assert values[0] > values[1] > values[2]
+    assert values[2] == values[3]
+    print("✓ FCE continuous scores reach the loss and preserve group-relative ranking")
+
+
+def validate_fcc_gold_blindness():
+    """FCC ignores an answer field even if a caller accidentally supplies one."""
+    trainer = object.__new__(StepLevelGRPOTrainer)
+    trainer.reward_source = "fcc"
+    trainer.num_generations = 4
+    hidden = trainer._gold_answers_for_batch(
+        [{"prompt": "irrelevant", "answer": r"\boxed{18}"}]
+    )
+    assert hidden == [None, None, None, None]
+
+    trainer.reward_source = "fce"
+    hidden_fce = trainer._gold_answers_for_batch(
+        [{"prompt": "irrelevant", "answer": r"\boxed{18}"}]
+    )
+    assert hidden_fce == [None, None, None, None]
+
+    trainer.reward_source = "fce_permuted"
+    hidden_control = trainer._gold_answers_for_batch(
+        [{"prompt": "irrelevant", "answer": r"\boxed{18}"}]
+    )
+    assert hidden_control == [None, None, None, None]
+
+    trainer.reward_source = "gold"
+    visible = trainer._gold_answers_for_batch(
+        [{"prompt": "irrelevant", "answer": r"\boxed{18}"}]
+    )
+    assert visible == ["18", "18", "18", "18"]
+    print("✓ FCC/FCE/control paths are gold-blind even when an answer field is supplied")
+
+
+def validate_exact_trajectory_bypasses_auxiliary_reward():
+    """Pure FCC-GRPO must not require the optional encoder/dictionary path."""
+    trainer = object.__new__(StepLevelGRPOTrainer)
+    trainer.alpha = 0
+    trainer.terminal_spread = "constant"
+    trainer.use_contrastive = False
+    trainer.use_l2a = False
+    trainer.use_hybrid = False
+    trainer.encoder = None
+    trainer.D = None
+    assert trainer._exact_trajectory_mode()
+    print("✓ exact FCC/FCE trajectory mode bypasses the auxiliary reward stack")
 
 
 def validate_causal_credit():
@@ -1347,16 +1615,21 @@ We verify: 2(4) + 5 = 13. The answer is correct."""
 
     print("\n=== Regression Test ===")
     validate_regression()
-
-    print("\n=== Constant-Token GRPO Coverage ===")
     validate_constant_token_coverage()
-    validate_answer_canonicalization()
 
     print("\n=== Fix 1: Terminal Spread ===")
     validate_terminal_spread()
 
     print("\n=== Reward Source Rewire ===")
     validate_reward_source_rewire()
+
+    print("\n=== Frozen Cross-Consensus ===")
+    validate_fcc_frozen_target()
+    validate_fce_frozen_scores()
+    validate_fce_permuted_control()
+    validate_fce_continuous_loss_path()
+    validate_fcc_gold_blindness()
+    validate_exact_trajectory_bypasses_auxiliary_reward()
 
     print("\n=== Fix 2: Causal Credit ===")
     validate_causal_credit()

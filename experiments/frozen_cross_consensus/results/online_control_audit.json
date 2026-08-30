@@ -1,0 +1,118 @@
+{
+  "method": "Frozen Cross-Evidence GRPO",
+  "audit_version": 1,
+  "bank": {
+    "sha256": "273bcf44f2ff86356f41ffeee2276898cae0c2aacdab6b8dcd4488a8d23a134f",
+    "items": 1000,
+    "accepted_evidence_prompts": 895,
+    "accepted_fraction": 0.895,
+    "unique_ordered_prompt_hashes": true,
+    "panels_exactly_12_each": true,
+    "candidates_absent": true,
+    "gold_stored": false,
+    "frozen_evidence_recomputed_exactly": true,
+    "normalized_train_heldout_overlap": 0,
+    "exact_train_heldout_overlap": 0
+  },
+  "source_sha256": {
+    "fce_reward.py": "6ab3f52d909c32370a9145a44a90d78edd191aad56c168eaf97fca243c642d02",
+    "fcc_reward.py": "a2155fdce4dfd5d4eddd519ca72be13d90c216c150d92dfc33f61ffeb75d5795",
+    "build_fcc_bank.py": "23e08caa335f6cfddb9366ae4fb839fc06e8e021c92298f7bd191ee5eb82bf20",
+    "fcc_step_pgr_trainer.py": "620e894de2f3f455dde2a9af14a10d24352bccc4f80844e97b821b15d2237fd8",
+    "local_fcc_train.py": "619981e3a5b19bcd646bd41dded2212edaad1742a2f488064f69fe9c34d882c5",
+    "evaluate_fcc_online.py": "9ac7d34fc4317bc6d0ebc5269da1671a7f9ad351ba74b78dba4617932f4c8790",
+    "analyze_fcc_online.py": "39458db9ec4638e33be0b201881a98f4bf7af5ea1fefbc4fcde60db20193cdb7",
+    "analyze_fce_control.py": "c8a873230a55075f52a710dd29eb75148dff28e6367630ee59f9c363513a88bf",
+    "run_fcc_online_gate.sh": "8f4f496a98e11f86e6387204450c977c9b0e0379132f19af066febd5cd2d2941",
+    "audit_fce_online.py": "e919b9c10d17668161fd9e401ac4ca8eb0b2b63ca360bdc98063489d6683ab7e"
+  },
+  "passed": true,
+  "base_evaluation": {
+    "sha256": "f5441a807d3185c5b54a5e65d52fdea2620854469b39e22903712237032a8c99",
+    "checkpoint": "HuggingFaceTB/SmolLM2-1.7B-Instruct",
+    "correct": 148,
+    "accuracy": 0.296,
+    "paired_prompt_order_verified": true
+  },
+  "trained_evaluation": {
+    "sha256": "392ad7d563c3f741101f19fa8c78267acb77ecd6193af256aaa81e9ec2a40450",
+    "checkpoint": "/home/ajinkya/pgr/checkpoints/fce_online_trajectory_fce_seed42_steps1000_k4_final",
+    "correct": 257,
+    "accuracy": 0.514,
+    "paired_prompt_order_verified": true
+  },
+  "analysis": {
+    "method": "Frozen Cross-Evidence GRPO",
+    "n": 500,
+    "test_offset": 500,
+    "decoding": "greedy",
+    "base_accuracy": 0.296,
+    "trained_accuracy": 0.514,
+    "trained_minus_base": 0.218,
+    "gain_ci95": [
+      0.174,
+      0.262
+    ],
+    "p_gain_le_zero": 0.0,
+    "trained_only_correct": 132,
+    "base_only_correct": 23,
+    "viability_gate": {
+      "gain_at_least_minimum": true,
+      "minimum_gain": 0.03,
+      "paired_bootstrap_p_lt_0_05": true,
+      "passed": true
+    },
+    "sha256": "ea13159efe02bfff12c52a37868188e05b145d346ea1f0961c2ce6a984c035c7",
+    "recomputed_exactly": true
+  },
+  "final_model": {
+    "path": "/home/ajinkya/pgr/checkpoints/fce_online_trajectory_fce_seed42_steps1000_k4_final",
+    "config_sha256": "5632fec6fc3cf066f1cd3eced171f306eeade56c7c11eb644e9c1d8a23ca02ea",
+    "weight_files": {
+      "model.safetensors": {
+        "bytes": 3422777952,
+        "sha256": "0c15edc9456f89dc9f1fc15bd2ea0f0b06a1954350a90a80203e7bda757b3608"
+      }
+    }
+  },
+  "matched_control_evaluation": {
+    "sha256": "42affbb198f673586b874a5d93e39de59422decad7fc3ff337c2794ab5e23fff",
+    "checkpoint": "/home/ajinkya/pgr/checkpoints/fce_control_trajectory_fce_permuted_seed42_steps1000_k4_final",
+    "correct": 168,
+    "accuracy": 0.336,
+    "paired_prompt_order_verified": true
+  },
+  "matched_control_analysis": {
+    "method": "FCE versus trajectory-permuted FCE control",
+    "n": 500,
+    "test_offset": 500,
+    "decoding": "greedy",
+    "fce_accuracy": 0.514,
+    "permuted_control_accuracy": 0.336,
+    "fce_minus_control": 0.178,
+    "gain_ci95": [
+      0.132,
+      0.224
+    ],
+    "p_gain_le_zero": 0.0,
+    "fce_only_correct": 123,
+    "control_only_correct": 34,
+    "attribution_gate": {
+      "fce_better_than_control": true,
+      "paired_bootstrap_p_lt_0_05": true,
+      "passed": true
+    },
+    "sha256": "487a1816c71f04c7eb10b50c6d28e6926eaafd4e3ce8a6ad1dccb11aaae5c18b",
+    "recomputed_exactly": true
+  },
+  "matched_control_model": {
+    "path": "/home/ajinkya/pgr/checkpoints/fce_control_trajectory_fce_permuted_seed42_steps1000_k4_final",
+    "config_sha256": "5632fec6fc3cf066f1cd3eced171f306eeade56c7c11eb644e9c1d8a23ca02ea",
+    "weight_files": {
+      "model.safetensors": {
+        "bytes": 3422777952,
+        "sha256": "42e60c3230dbc2b46699a97f160ee922156ad7d57f8548fcf208ea81e78efc71"
+      }
+    }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "lock_id": "FCE-2026-07-30-WRONG-CONSENSUS-LOCK-001",
+  "locked_after": "SmolLM2 development analysis",
+  "locked_before": "Qwen safeguard analysis",
+  "development_bank_sha256": "9e3fba7b48cc0034fa7f363e6ac2e97a8da9c63118124dd3edcea1634501375e",
+  "qwen_bank_sha256": "226ae02da72e014ce0b2712d3c8863f62155619b97f534fff2d0f795fad5a341",
+  "development_gate_result": "no tested safeguard passed all three preregistered gates",
+  "locked_safeguard": "minimum_two_occurrences_in_each_panel",
+  "selection_rationale": {
+    "status": "post-development fallback rule, not part of the original preregistration",
+    "rule": "choose the variant maximizing the minimum ratio to each numerical gate",
+    "wrong_reinforcement_relative_reduction": 0.29770905898677547,
+    "selection_gain_retention": 0.7762863534675615,
+    "informative_group_rate": 0.422,
+    "minimum_gate_attainment_ratio": 0.9703579418344518
+  },
+  "qwen_success_gate": {
+    "wrong_given_reinforcement_relative_reduction_at_least": 0.25,
+    "retain_at_least_fraction_of_baseline_selection_gain": 0.8,
+    "informative_group_rate_at_least": 0.3
+  },
+  "immutability_rule": "Do not change the safeguard or thresholds after inspecting the Qwen result."
+}

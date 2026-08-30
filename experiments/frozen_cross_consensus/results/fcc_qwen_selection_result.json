@@ -1,0 +1,32 @@
+{
+  "method": "Frozen Cross-Consensus GRPO",
+  "model": "Qwen/Qwen2.5-1.5B-Instruct",
+  "n": 500,
+  "panel_size": 12,
+  "candidate_panel_size": 4,
+  "target_coverage": 0.63,
+  "target_precision_when_accepted": 0.9301587301587302,
+  "random_candidate_accuracy": 0.403,
+  "fcc_pick_accuracy": 0.5935,
+  "oracle_candidate_accuracy": 0.724,
+  "fcc_minus_random": 0.1905,
+  "gain_ci95": [
+    0.16699999999999998,
+    0.21449999999999997
+  ],
+  "p_gain_le_zero": 0.0,
+  "oracle_gain_captured": 0.5934579439252338,
+  "captured_ci95": [
+    0.5305079578338155,
+    0.6557911908646002
+  ],
+  "wrong_target_reinforcement_rate": 0.038,
+  "reinforcement_event_rate": 0.566,
+  "informative_group_rate": 0.45,
+  "wrong_given_reinforcement": 0.06713780918727916,
+  "viability_gate": {
+    "captures_at_least_70pct_oracle_gain": false,
+    "paired_bootstrap_p_lt_0_05": true,
+    "informative_group_rate_at_least_0_30": true
+  }
+}

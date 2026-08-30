@@ -1,0 +1,43 @@
+{
+  "amendment_id": "FCE-2026-07-29-CONTROL-RESERVATION-022",
+  "timestamp": "2026-07-29T22:59:00-07:00",
+  "status_at_amendment": {
+    "primary_training_complete": true,
+    "primary_heldout_result_complete": true,
+    "matched_control_clean_attempt_started_at": "2026-07-29T22:35:50-07:00",
+    "matched_control_latest_certified_checkpoint": 250,
+    "matched_control_live_step_before_yield": 268,
+    "matched_control_evaluation_created": false,
+    "matched_control_result_created": false
+  },
+  "event": {
+    "timestamp": "2026-07-29T22:58:07-07:00",
+    "reason": "The FCE supervisor observed a foreign CUDA allocation and correctly terminated its child. The unrelated reward-source queue ignores CUDA allocations below 4 GiB during admission, while FCE yields to any foreign allocation. Both queues therefore briefly admitted a child in the same startup window.",
+    "disposition": "The entire interrupted control directory, log, and live invocation capture were archived intact. No held-out evaluation, control result, or control audit was created. The run is excluded from attribution."
+  },
+  "archived_artifacts": {
+    "training": "/home/ajinkya/pgr/checkpoints/fce_control_trajectory_fce_permuted_seed42_steps1000_k4_INTERRUPTED_ARCHIVE_20260729_2258",
+    "log": "/home/ajinkya/pgr/logs/fce_matched_control_train_INTERRUPTED_ARCHIVE_20260729_2258.log",
+    "invocation": "/home/ajinkya/pgr/checkpoints/fce_control_live_invocation_INTERRUPTED_ARCHIVE_20260729_2258.json",
+    "use_for_attribution": false
+  },
+  "change": {
+    "file": "run_fcc_online_gate.sh",
+    "old_sha256": "65a7730ee685cdce47a5d1afe33204a167ee2cd2a095320ab8708a35eba8458c",
+    "new_sha256": "2da924b938fb32da46bb8232f4901fcb4fb4d2c52d4e8f0b59961f4179dcc0cd",
+    "details": "Before the clean control starts, the FCE supervisor creates a 4096 MiB CUDA reservation. FCE records and ignores its own reservation PID; the unrelated queue treats the GPU as busy. The reservation remains through control training and evaluation and is removed by the supervisor exit trap."
+  },
+  "unchanged": [
+    "FCE reward construction",
+    "uniform per-group reward permutation",
+    "trainer source",
+    "model",
+    "training bank",
+    "seed",
+    "optimizer and scheduler",
+    "training steps",
+    "held-out prompts",
+    "attribution gate"
+  ],
+  "next_execution": "Start a new control from step 0 only after the 4096 MiB reservation is visible. Non-exact resume remains disabled."
+}

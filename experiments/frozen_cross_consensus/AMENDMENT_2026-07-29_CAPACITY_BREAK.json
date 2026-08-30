@@ -1,0 +1,28 @@
+{
+  "amendment_id": "FCE-2026-07-29-CAPACITY-BREAK-008",
+  "timestamp": "2026-07-29T13:16:14-07:00",
+  "status_at_amendment": {
+    "online_train_bank_items": 280,
+    "online_train_bank_partial": true,
+    "primary_online_training_started": false,
+    "primary_online_result_created": false,
+    "matched_control_training_started": false
+  },
+  "reason": "Live observation showed wait_clear reaching stable=2/2 and then sleeping an additional 60 seconds without rechecking. A foreign 4.958 GiB process entered during that blind interval. The subsequent run_yieldable check would catch it, but only after unnecessarily launching and terminating the protected child.",
+  "change": {
+    "file": "run_fcc_online_gate.sh",
+    "old_sha256": "9b103b6471d7eb8ef9d3650342c0174b1cba22f5792b2cf1ae48d2e0372869e5",
+    "new_sha256": "53bcf57e8bb316ec977c012b1c2f8ca666b54b84ad612e66dfc6cb1ed4590bb9",
+    "details": "Break out of wait_clear immediately after the second clean capacity observation. Continue using two observations 60 seconds apart and the active-child five-second foreign-work monitor."
+  },
+  "frozen_unchanged": [
+    "method",
+    "bank",
+    "models",
+    "training hyperparameters",
+    "primary and matched-control reward sources",
+    "evaluation",
+    "statistical gates"
+  ],
+  "scope": "Pre-outcome scheduler correction made while the supervisor was idle in wait_clear. No model or bank child was active."
+}

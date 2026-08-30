@@ -1,0 +1,21 @@
+{
+  "method": "FCE versus trajectory-permuted FCE control",
+  "n": 500,
+  "test_offset": 500,
+  "decoding": "greedy",
+  "fce_accuracy": 0.514,
+  "permuted_control_accuracy": 0.336,
+  "fce_minus_control": 0.178,
+  "gain_ci95": [
+    0.132,
+    0.224
+  ],
+  "p_gain_le_zero": 0.0,
+  "fce_only_correct": 123,
+  "control_only_correct": 34,
+  "attribution_gate": {
+    "fce_better_than_control": true,
+    "paired_bootstrap_p_lt_0_05": true,
+    "passed": true
+  }
+}

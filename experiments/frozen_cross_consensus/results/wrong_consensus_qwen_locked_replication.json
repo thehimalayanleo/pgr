@@ -1,0 +1,148 @@
+{
+  "analysis": "systematic wrong frozen-consensus safeguards",
+  "phase": "locked_replication",
+  "bank_path": "/home/ajinkya/pgr/checkpoints/fcc_qwen_test_n500_p12.json",
+  "bank_sha256": "226ae02da72e014ce0b2712d3c8863f62155619b97f534fff2d0f795fad5a341",
+  "model": "Qwen/Qwen2.5-1.5B-Instruct",
+  "dataset": "openai/gsm8k",
+  "split": "test",
+  "answer_mode": "numeric",
+  "n": 500,
+  "panel_size": 12,
+  "candidate_panel_size": 4,
+  "gold_used_for_score_construction": false,
+  "safeguard_definitions": {
+    "minimum_two_occurrences_in_each_panel": "drop answers with support below two in either panel",
+    "minimum_three_independent_paths_total": "drop answers with fewer than three lexically independent supporting paths across panels",
+    "cross_panel_support_times_panel_margin": "multiply FCE by sqrt(clipped_margin_a*clipped_margin_b), where each margin is (answer_count-max_other_count)/panel_size",
+    "cross_panel_support_times_one_minus_normalized_panel_entropy": "multiply FCE by one minus mean panel answer entropy normalized by log(panel_size)"
+  },
+  "variants": {
+    "baseline_fce": {
+      "random_candidate_accuracy": 0.403,
+      "fce_pick_accuracy": 0.6655,
+      "selection_gain": 0.2625,
+      "selection_gain_ci95": [
+        0.235,
+        0.2905
+      ],
+      "reinforcement_event_rate": 0.836,
+      "informative_group_rate": 0.72,
+      "wrong_given_reinforcement": 0.21291866028708134,
+      "wrong_given_reinforcement_ci95": [
+        0.17422434367541767,
+        0.25301204819277107
+      ]
+    },
+    "minimum_two_occurrences_in_each_panel": {
+      "random_candidate_accuracy": 0.403,
+      "fce_pick_accuracy": 0.627,
+      "selection_gain": 0.224,
+      "selection_gain_ci95": [
+        0.198,
+        0.25
+      ],
+      "reinforcement_event_rate": 0.682,
+      "informative_group_rate": 0.566,
+      "wrong_given_reinforcement": 0.12609970674486803,
+      "wrong_given_reinforcement_ci95": [
+        0.09202453987730061,
+        0.16184971098265896
+      ]
+    },
+    "minimum_three_independent_paths_total": {
+      "random_candidate_accuracy": 0.403,
+      "fce_pick_accuracy": 0.6595,
+      "selection_gain": 0.2565,
+      "selection_gain_ci95": [
+        0.229,
+        0.284
+      ],
+      "reinforcement_event_rate": 0.786,
+      "informative_group_rate": 0.67,
+      "wrong_given_reinforcement": 0.178117048346056,
+      "wrong_given_reinforcement_ci95": [
+        0.14105793450881612,
+        0.21717171717171718
+      ]
+    },
+    "cross_panel_support_times_panel_margin": {
+      "random_candidate_accuracy": 0.403,
+      "fce_pick_accuracy": 0.5935,
+      "selection_gain": 0.1905,
+      "selection_gain_ci95": [
+        0.167,
+        0.2145
+      ],
+      "reinforcement_event_rate": 0.566,
+      "informative_group_rate": 0.45,
+      "wrong_given_reinforcement": 0.06713780918727916,
+      "wrong_given_reinforcement_ci95": [
+        0.03936943332903059,
+        0.09830508474576272
+      ]
+    },
+    "cross_panel_support_times_one_minus_normalized_panel_entropy": {
+      "random_candidate_accuracy": 0.403,
+      "fce_pick_accuracy": 0.6655,
+      "selection_gain": 0.2625,
+      "selection_gain_ci95": [
+        0.235,
+        0.2905
+      ],
+      "reinforcement_event_rate": 0.836,
+      "informative_group_rate": 0.72,
+      "wrong_given_reinforcement": 0.21291866028708134,
+      "wrong_given_reinforcement_ci95": [
+        0.17422434367541767,
+        0.25301204819277107
+      ]
+    }
+  },
+  "comparisons_to_baseline": {
+    "minimum_two_occurrences_in_each_panel": {
+      "wrong_given_reinforcement_relative_reduction": 0.4077564334903951,
+      "selection_gain_retention": 0.8533333333333333,
+      "gate": {
+        "wrong_relative_reduction_at_least_0_25": true,
+        "selection_gain_retention_at_least_0_80": true,
+        "informative_group_rate_at_least_0_30": true
+      },
+      "passes_all": true
+    },
+    "minimum_three_independent_paths_total": {
+      "wrong_given_reinforcement_relative_reduction": 0.16345026731852355,
+      "selection_gain_retention": 0.9771428571428571,
+      "gate": {
+        "wrong_relative_reduction_at_least_0_25": false,
+        "selection_gain_retention_at_least_0_80": true,
+        "informative_group_rate_at_least_0_30": true
+      },
+      "passes_all": false
+    },
+    "cross_panel_support_times_panel_margin": {
+      "wrong_given_reinforcement_relative_reduction": 0.6846786040417675,
+      "selection_gain_retention": 0.7257142857142856,
+      "gate": {
+        "wrong_relative_reduction_at_least_0_25": true,
+        "selection_gain_retention_at_least_0_80": false,
+        "informative_group_rate_at_least_0_30": true
+      },
+      "passes_all": false
+    },
+    "cross_panel_support_times_one_minus_normalized_panel_entropy": {
+      "wrong_given_reinforcement_relative_reduction": 0.0,
+      "selection_gain_retention": 1.0,
+      "gate": {
+        "wrong_relative_reduction_at_least_0_25": false,
+        "selection_gain_retention_at_least_0_80": true,
+        "informative_group_rate_at_least_0_30": true
+      },
+      "passes_all": false
+    }
+  },
+  "development_selected_safeguard": null,
+  "locked_safeguard": "minimum_two_occurrences_in_each_panel",
+  "locked_safeguard_passes_all": true,
+  "impossibility_boundary": "A label-free consensus method cannot distinguish a unanimous, diversely worded wrong answer from a correct one when every observable panel statistic is the same."
+}

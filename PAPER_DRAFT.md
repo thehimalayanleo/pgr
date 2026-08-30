@@ -1,142 +1,122 @@
-# PGR — Methods and Results (Tier 1, workshop draft)
+# SUPERSEDED DRAFT: Frozen-Encoder Per-Step Rewards Don't Grade Math Reasoning, But Contrastive Group Structure Does
 
-## Methods
+> **Status, 2026-08-21:** This draft is preserved only as research history. Its
+> positive contrastive and success-dictionary OMP claims did not survive the
+> label-leakage audit. Cross-fitted success-dictionary OMP reached AUROC `0.426`,
+> and leave-one-out contrastive scoring reached AUROC `0.443`. Historical
+> majority, random, and consensus training comparisons were separately
+> invalidated by a reward-source control-path bug. Do not cite the positive
+> claims below. The current verdict is recorded in
+> `OMP_RL_REWARD_FINAL_AUDIT_2026-08-21.md`.
 
-### Setup
+**Workshop submission draft - COLM 2026**
 
-**Model**: Qwen2.5-3B-Instruct (Qwen Team, 2024).
-**Dataset**: `lighteval/MATH-Hard` train split (Hendrycks et al., 2021), filtered to Level 5 problems (the hardest tier).
-**Hardware**: NVIDIA A100-80GB (Modal cloud).
-**RL algorithm**: GRPO (Shao et al., 2024) as implemented in TRL 0.14.0.
+## Abstract (TL;DR)
 
-| Hyperparameter | Value |
-|---|---|
-| Training steps | 100 |
-| Rollouts per group (k) | 4 |
-| Max completion length | 512 tokens |
-| Learning rate | 1e-6, cosine schedule, warmup=20 |
-| Gradient accumulation | 4 |
-| Seeds | 42, 43, 44 |
-| Precision | bf16 |
+We test whether *frozen-encoder per-step rewards* can substitute for trained Process Reward Models (PRMs) in dense-credit RL post-training. On 150 GSM8K rollouts from Qwen2.5-1.5B, five distinct per-step formulations - single-step OMP residual, prefix-conditioned OMP, leave-one-out policy likelihood, pair-wise concatenation, pair-wise difference - all yield Spearman ρ ≤ |0.11| with trajectory correctness. **A frozen sentence encoder cannot grade math reasoning step quality.** Two complementary findings rescue per-step credit in this regime: (i) GRPO's group normalization mathematically collapses any preserved per-step variance by **~3500×**, explaining null results across reward designs; (ii) reframing the K-rollout group as a **self-contained labeled batch** lets the encoder measure step *distance* (easy) rather than step *quality* (impossible), yielding two new reward signals - *contrastive direction* (ρ = +0.674) and *success-dictionary OMP* (ρ = +0.740) - both reaching the oracle best-of-K pick ceiling without using the correctness label as a per-step input.
 
-### Pursuit-Graded Reward (PGR)
+## 1. Setup and Problem
 
-For each rollout, we split the completion into reasoning steps on double newlines and `(?=Step \d+:)` markers (steps shorter than 20 characters are discarded). Each step `s_t` is embedded with BAAI/bge-small-en-v1.5 to produce a unit vector `e_t ∈ R^384`.
+We study per-step reward signals for RL post-training of reasoning LLMs. Two regimes exist in practice: trajectory-only (binary terminal reward + GRPO; mature, used by DeepSeek-R1, Qwen-Math) and per-step (Process Reward Model + PPO; powerful but requires a trained PRM). We ask: **can a frozen pretrained encoder substitute for the PRM?**
 
-The per-step reward is the negative-exponential of the OMP reconstruction error against a learned dictionary `D ∈ R^{256 × 384}`:
+Setup: Qwen2.5-3B-Instruct fine-tuned with GRPO on MATH-Hard (Hendrycks et al., 2021). K=4 rollouts per prompt, max_completion_length=512. Encoder: BAAI/bge-small-en-v1.5 (384-d). All experiments are limited by a fixed compute budget appropriate for a workshop submission (≤100 H100 hours).
 
+## 2. Per-Step Rewards from Frozen Encoders Are Noise
+
+We test five per-step reward formulations on 150 GSM8K rollouts (Qwen2.5-1.5B, K=3, T=0.8):
+
+| Method | Formulation | Spearman ρ with correctness | Best-of-K pick |
+|---|---|---:|---:|
+| Single-step OMP | `r_k = exp(-‖e_k − D · OMP(e_k, D)‖/τ)` | +0.022 | 0.200 |
+| Prefix-conditioned OMP | marginal residual of cum. prefix `e_{1:k}` vs `e_{1:k-1}` | -0.045 | 0.160 |
+| LOO likelihood | mean log P(step_k tokens \| prefix) under policy | -0.108 | 0.160 |
+| Pair-wise concat | OMP residual on embed(step_{k-1} + step_k) | -0.003 | 0.120 |
+| Pair-wise diff | OMP residual on embed(pair) − embed(step_{k-1}) | +0.071 | 0.160 |
+
+All five lie within sampling noise of ρ = 0. Best-of-K picking with these rewards performs at or below random (15%) - none approaches the oracle ceiling of 32% (problems with at least one correct rollout in the group). The pretrained encoder captures lexical/topical patterns but no information about mathematical correctness at the step level.
+
+This is consistent with DeepSeek-R1, Math-Shepherd, and OmegaPRM all using *trained* PRMs (small models fine-tuned on labeled correct/incorrect intermediate steps) rather than frozen-encoder similarity.
+
+## 3. Mechanism: GRPO Group Normalization Collapses Per-Step Variance
+
+Even when a per-step reward function has non-trivial structure, GRPO's group-relative advantage normalization can erase it. We measure within-rollout advantage variance (the variance of `A[t]` across token positions within a single rollout) under two advantage estimators applied to the same per-step rewards:
+
+| Advantage estimator | within_rollout_adv_var |
+|---|---:|
+| GRPO group-normalized: `(r − group_mean) / group_std` | **0.05** |
+| PPO-style EMA baseline: `(r − r_EMA) / σ_EMA` | **150.8** |
+
+A **~3500× variance gap** at identical per-step rewards. GRPO group normalization pools rewards across K rollouts × N steps and re-centers them; the within-rollout component is destroyed. PPO-style scalar baselines (Schulman et al., 2017) preserve it.
+
+This explains why prior negative results on "per-step rewards under GRPO" do not necessarily indict the per-step signal - the algorithm itself is destructive to it.
+
+## 4. The Group Is a Self-Contained Labeled Batch
+
+GRPO already samples K rollouts per prompt and labels each with binary correctness. We use this as a **per-group labeled training set for a step-level reward**:
+
+> *Don't ask the encoder to grade a step. Ask it to measure distance between two attempts at the same step position.*
+
+### 4.1 Contrastive direction (Level 1)
+
+For each prompt with mixed success/failure in the group:
 ```
-codes = OMP(e_t, D.T, n_nonzero_coefs=5)
-recon_error_t = || e_t - D.T @ codes ||
-r_step_t = exp(-recon_error_t / tau),  tau=0.3
-```
-
-The total rollout reward combines step rewards with a binary terminal anchor:
-
-```
-r_total = alpha · mean(r_step_1..T) + (1 - alpha) · 1[final_answer correct],  alpha=0.5
-```
-
-### Dictionary construction
-
-The dictionary `D` is learned **offline** on 8,469 reasoning steps extracted from MATH-Hard *train* solutions. We fit a 256-atom dictionary with sklearn's `DictionaryLearning` (LARS fit, OMP transform, 5-sparse codes, α=0.5, 500 iterations).
-
-### Baselines
-
-**Binary GRPO**: identical setup, but `r_total = 1[final_answer correct]` (no per-step signal).
-
-### Metrics
-
-**grad_norm**: the L2 norm of the policy gradient at each optimization step, as reported by the TRL trainer. This is the canonical signal that the reward function is producing a usable gradient.
-
-**Dead zone rate**: the fraction of optimization steps with `grad_norm < 0.5`. Steps in this regime contribute negligibly to learning.
-
-We report logged metrics at `logging_steps=10` (so 10 logged points per 100-step run).
-
----
-
-## Results
-
-### Headline
-
-On Qwen2.5-3B / MATH-Hard Level 5 (n=3 seeds, 100 training steps):
-
-| Metric | PGR | Binary GRPO |
-|---|---|---|
-| Mean grad_norm (final n=9 / n=13) | **5.76** | 2.43 |
-| Min grad_norm | **4.00** | 0.020 |
-| Dead zone rate (grad_norm < 0.5) | **0% (0/9)** | **38% (5/13)** |
-
-Combining all observations across run phases (n=24 PGR, n=23 binary):
-
-- PGR grad_norm range: **[4.00, 8.44]** — never enters the dead zone
-- Binary GRPO grad_norm range: **[0.020, 8.38]** — bimodal, with dead zone in 30% of observations
-- Dead zone in binary GRPO is **reproducible in 2 of 3 seeds** (seeds 42 and 43); seed 44 happened to avoid it in our 100-step window
-
-### Per-seed grad_norm trajectories
-
-**PGR** (final 30 steps from step-75 resume):
-
-```
-seed 42:  step  80: 4.41   step  90: 4.00   step 100: 5.69
-seed 43:  step  80: 6.34   step  90: 5.47   step 100: 5.81
-seed 44:  step  80: 5.41   step  90: 7.03   step 100: 7.72
+c_succ[k] = mean of embed(step_k) over successful rollouts
+c_fail[k] = mean of embed(step_k) over failed rollouts
+direction[k] = normalize(c_succ[k] − c_fail[k])
+per-step score = (embed(step_k) − c_fail[k]) · direction[k]
 ```
 
-**Binary GRPO** (final 50 steps; seeds 42 and 43 ran from a step-50 resume, seed 44 from step-75):
+The correctness labels generate the centroids; the encoder only contributes pairwise distances.
+
+### 4.2 Success-dictionary OMP (Level 2a)
+
+We pool successful step embeddings into a per-group dictionary `D_succ` and ask the OMP framework: "how well is this rollout's step k explained by winning patterns?"
 
 ```
-seed 42:  step  60: 0.020 ←   step  70: 3.67   step  80: 3.64
-          step  90: 0.021 ←   step 100: 3.86
-
-seed 43:  step  60: 3.05    step  70: 0.022 ←  step  80: 0.023 ←
-          step  90: 0.021 ←  step 100: 4.06
-
-seed 44:  step  80: 5.06    step  90: 5.69    step 100: 8.38
+D_succ = stack(embed(step_k_j) for all successful rollouts j and positions k)
+reward[k] = exp(- ‖e_k − D_succ · OMP(e_k, D_succ, n_nonzero=5)‖ / τ)
 ```
 
-Arrows mark dead-zone hits. Binary seed 43 shows **three consecutive optimization steps with effectively zero gradient** — the model is training, but the signal is silent.
+This is position-agnostic (set-based) and captures the linear span of success patterns through OMP combinations.
 
-### Atom-count ablation (bge-small dictionary)
+### 4.3 Offline validation (n=50 GSM8K, K=3)
 
-We swept dictionary sizes to confirm 256 is a reasonable choice and to check for overfitting:
+| Method | ρ | Pick acc |
+|---|---:|---:|
+| Random pick / base accuracy | - | 0.147 |
+| **Oracle ceiling** | - | **0.320** |
+| Single OMP (baseline) | +0.022 | 0.200 |
+| Contrastive direction (L1) | +0.674 | 0.320 ✓ |
+| **Success-dictionary OMP (L2a)** | **+0.740** | **0.320 ✓** |
 
-| Atoms | OMP gap (shuffled − correct) | AUROC (correct vs shuffled-word probe) |
-|---|---|---|
-| 64 | 0.0215 | 0.6213 |
-| 128 | 0.0244 | 0.6326 |
-| 256 | 0.0292 | 0.6327 |
-| **512** | **0.0319** | **0.6511** (peak) |
-| 1024 | 0.0349 | 0.6442 (linear-dependence warnings) |
+Both L1 and L2a reach the oracle picking ceiling *without using the correctness label as a per-step reward input* (correctness labels only generate the contrast centroids / dictionary). L2a wins on ρ because its set-based formulation is robust to position misalignment and length variation across rollouts.
 
-Gap grows monotonically with atom count → no overfitting up to 1024. AUROC peaks at 512 atoms — likely the optimal trade-off for bge-small. The plateau at AUROC ~0.65 hints at the bge-small encoder being the soft ceiling on discriminability rather than the dictionary.
+## 5. Online Training Results
 
----
+We train Qwen2.5-3B-Instruct with each reward formulation on MATH-Hard. All eval numbers are n=100, max_tokens=1024, T=0.7.
 
-## Interpretation
+| Config | Train steps | KL at end | Eval acc |
+|---|---:|---:|---:|
+| Trajectory GRPO baseline | 100 | 3e-4 | ~50% |
+| Single OMP (PGR original) | 100 | 3e-4 | ~49% |
+| GRPO + positional terminal | 50 | 3e-4 | 48% |
+| PPO + uniform terminal | 50 | 3e-4 | 48% |
+| PPO + positional terminal | 50 | 3e-4 | 50% |
+| **Contrastive (L1)** | 50 | 3e-4 | **50%** |
+| **L2a (success-dict OMP)** | 50 | - | *in progress* |
 
-1. **Binary GRPO's dead zone is real and reproducible.** With a 3B model on Level 5 MATH, the standard RLVR reward produces near-zero gradient on a substantial fraction of optimization steps (38% in the final 50 steps of our runs, 30% over all observations). Two of three seeds exhibited the phenomenon.
+Online results land within ±3% of the trajectory baseline - within the n=100 CI of ±10%. At this compute budget (50–100 training steps, LR=1e-6, KL ≈ 3e-4), no per-step formulation produces statistically distinguishable eval lift. The model barely moves.
 
-2. **PGR maintains gradient signal across all seeds and all observed steps.** In 24 logged observations spanning 3 seeds and multiple resume phases, PGR's grad_norm never dropped below 4.0 and never below 0.5 (our dead-zone threshold).
+**This is consistent with the broader literature**: DeepSeek-R1, Math-Shepherd, and similar PRM-based RL pipelines use 10k+ training steps to demonstrate per-step credit advantage. Our compute budget cannot reach that regime.
 
-3. **The dictionary is not overfitting.** With 256 atoms, the discriminability gap is well below the asymptote at 512 atoms. The encoder, not the dictionary, is the bottleneck on signal quality.
+## 6. Contributions and Limitations
 
----
+**Contributions.** (1) A clean negative: five frozen-encoder per-step formulations are noise on math reasoning. (2) A mechanism: GRPO group-norm collapses per-step variance by ~3500×, independent of reward design. (3) Two new positive results: contrastive direction and success-dictionary OMP both achieve ρ ≈ 0.7 with correctness - the first non-trivial per-step signals from a frozen encoder that don't leak the trajectory label per step.
 
-## Limitations
+**Limitations.** (1) Online null results due to limited compute budget; we cannot rule out lift at 1000+ training steps. (2) GSM8K offline tests; MATH-Hard online tests. (3) `contrast_group_frac` declines from 0.30 → 0.05 over training as success rate rises and groups become all-correct or all-failed - practical use will need a fallback (e.g., L2a falls back to OMP, or hybridize with positional terminal on no-contrast groups).
 
-- **No accuracy claim yet.** We measure gradient signal density, not downstream model improvement. The 100-step horizon is too short to expect measurable Pass@1 gains on MATH-Hard; longer training is required.
-- **3B model.** Larger models partially escape the dead zone by solving more rollouts correctly. The gap between PGR and binary GRPO should narrow at 7B+ but persist on the hardest subsets.
-- **Single dataset.** Generalization to AIME / GPQA / oracle-free SciBench is future work.
-- **Single encoder.** The bge-small encoder limits discriminability at AUROC ~0.65. A stronger or fine-tuned encoder would likely improve signal sharpness.
+**Practical recommendation.** Without a trained PRM and below ≈1000 training steps, trajectory GRPO is the right default. Above that, our L2a method is the cheapest known per-step signal that doesn't require labeled step data.
 
-## Reproducibility
+## 7. Code and Reproducibility
 
-All training scripts, dictionary, and per-step grad_norm logs are at github.com/thehimalayanleo/pgr. The exact run command for the experiments reported here:
-
-```bash
-modal run --detach modal_train.py --mode pgr --max-steps 100 --seed {42,43,44}
-modal run --detach modal_train.py --mode binary --max-steps 100 --seed {42,43,44}
-```
-
-Total Modal compute: approximately $30 across all phases (including preemption retries).
+All code, configs, cached rollouts, and offline test results: `github.com/thehimalayanleo/thepursuits/pgr`. Modal artifact volumes are public.

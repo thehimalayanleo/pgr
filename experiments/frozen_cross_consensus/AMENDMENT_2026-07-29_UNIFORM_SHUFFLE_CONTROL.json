@@ -1,0 +1,62 @@
+{
+  "amendment_id": "FCE-2026-07-29-UNIFORM-SHUFFLE-CONTROL-007",
+  "timestamp": "2026-07-29T13:08:21-07:00",
+  "status_at_amendment": {
+    "online_train_bank_items_last_verified": 280,
+    "online_train_bank_partial": true,
+    "primary_online_training_started": false,
+    "primary_online_result_created": false,
+    "matched_control_training_started": false
+  },
+  "reason": "A pre-training sanity evaluation on the sealed selection banks showed that the original guaranteed nonzero cyclic shift was adversarial rather than null: it drove selection below random because it systematically moved supported-answer rewards onto other candidates. A matched control should make reward assignment independent, not deliberately wrong.",
+  "change": {
+    "old_transformation": "Deterministic nonzero cyclic shift in {1,2,3}",
+    "new_transformation": "Deterministic uniform random permutation over all K! trajectory assignments, SHA256-seeded by run seed, optimizer global step, group index, and prompt hash",
+    "preserved": [
+      "exact per-group reward multiset",
+      "mean and variance",
+      "nonzero count",
+      "reward magnitudes",
+      "informative-group rate",
+      "deterministic resume behavior"
+    ],
+    "interpretation": "Reward assignment is independent of trajectory quality in expectation. Identity and partial fixed-point permutations are allowed at their correct null probabilities, avoiding a constructed anti-reward."
+  },
+  "source_changes": [
+    {
+      "file": "fcc_step_pgr_trainer.py",
+      "old_sha256": "ec39c39f49df5b3ebd73c27eeef65901155ac832e3b92e9f6ffa257223e2b725",
+      "new_sha256": "620e894de2f3f455dde2a9af14a10d24352bccc4f80844e97b821b15d2237fd8"
+    },
+    {
+      "file": "local_fcc_train.py",
+      "old_sha256": "beabec661d2dc404158f3b56cd16ef65491b754c72d58f89a44ddffdb9b6a49b",
+      "new_sha256": "d9676cea27710ddafd8988e202c8b7be3bfe341c72a3a6a3e1f7e38e136f8698"
+    },
+    {
+      "file": "run_fcc_online_gate.sh",
+      "old_sha256": "87d969518fc5854914faab7c5ac69d3cadfb1a5a16c57e06e3bd788ab0196fba",
+      "new_sha256": "9b103b6471d7eb8ef9d3650342c0174b1cba22f5792b2cf1ae48d2e0372869e5"
+    }
+  ],
+  "posthoc_selection_sanity": {
+    "role": "Control validation only; not a method gate",
+    "smollm2": {
+      "random_candidate_accuracy": 0.2605,
+      "fce_candidate_accuracy": 0.484,
+      "uniformly_shuffled_reward_accuracy": 0.2523333333333335
+    },
+    "qwen": {
+      "random_candidate_accuracy": 0.403,
+      "fce_candidate_accuracy": 0.6655,
+      "uniformly_shuffled_reward_accuracy": 0.39916666666666634
+    },
+    "all_1000_group_reward_multisets_preserved_exactly": true
+  },
+  "validation": [
+    "isolated trainer suite passes",
+    "matched-control reward multiset and deterministic-shuffle regression passes",
+    "exact optimizer-resume regression passes"
+  ],
+  "scope": "Pre-outcome control-validity correction made before either online arm began. The primary FCE method and every primary gate remain unchanged."
+}

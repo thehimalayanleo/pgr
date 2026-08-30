@@ -1,0 +1,43 @@
+{
+  "amendment_id": "FCE-2026-07-29-COOPERATIVE-PYTHON-COMPATIBILITY-016",
+  "timestamp": "2026-07-29T15:35:33-07:00",
+  "status_at_amendment": {
+    "online_train_bank_items": 557,
+    "online_train_bank_partial": true,
+    "primary_online_training_started": false,
+    "primary_online_result_created": false,
+    "matched_control_training_started": false
+  },
+  "reason": "A live semantic queue reservation retained the exact SEMANTIC_QUEUE_RESERVATION_BYTES allocate-once-and-sleep command but launched through /home/ajinkya/miniconda3/envs/pgr/bin/python instead of semantic-maintrack's Python environment. The previous classifier would treat that harmless reservation as foreign after the real semantic runner exited and prevent PGR from resuming.",
+  "change": {
+    "file": "run_fcc_online_gate.sh",
+    "old_sha256": "ade8e656a5c76dab07db32218295792126c162fc441ccb70241ae5f3b23ad7d1",
+    "new_sha256": "e94dae1e208bc5a727e6eed6a1dae08ac55a54d46eed893fd6fa9b526c963f0b",
+    "details": [
+      "Accept the exact semantic reservation signature under either semantic-maintrack's Python path or PGR's Python path.",
+      "Continue requiring the semantic reservation marker family and exact time.sleep(86400) behavior.",
+      "Add a positive scheduler self-test for the PGR-Python reservation form."
+    ]
+  },
+  "validation": [
+    "bash syntax validation passed.",
+    "The expanded scheduler interop self-test passed locally and remotely.",
+    "The authoritative, staging, and remote runner hashes are identical."
+  ],
+  "safety": [
+    "Normal PGR bank and training workers do not contain the semantic marker or sleeping command and are not classified as reservations.",
+    "The real semantic WikiText runner remains foreign.",
+    "Every unrelated CUDA process remains foreign."
+  ],
+  "frozen_unchanged": [
+    "method",
+    "bank contents",
+    "models",
+    "training hyperparameters",
+    "reward sources",
+    "checkpoint semantics",
+    "evaluation",
+    "statistical gates"
+  ],
+  "scope": "Pre-training, pre-outcome scheduler compatibility correction. No PGR worker or checkpoint write was active when the idle supervisor adopted the change."
+}

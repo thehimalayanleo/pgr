@@ -1,0 +1,56 @@
+{
+  "amendment_id": "FCE-2026-07-29-FAIR-SINGLE-ITEM-BANK-CLAIMS-019",
+  "timestamp": "2026-07-29T16:13:00-07:00",
+  "status_at_amendment": {
+    "online_train_bank_items": 569,
+    "online_train_bank_partial": true,
+    "primary_online_training_started": false,
+    "primary_online_result_created": false,
+    "matched_control_training_started": false
+  },
+  "reason": "Live validation of amendment 018 showed that its guard worked, but the existing builder invocation would retain the guard while generating every remaining bank item. That would unnecessarily starve an unrelated user queue. The intended scheduling unit is one atomically saved prompt, not the entire remaining bank.",
+  "changes": [
+    {
+      "file": "build_fcc_bank.py",
+      "old_sha256": "7893e6a3d96ecc74d9cbd50faad44db526b3ca9a3ed10a21d5784caf2c82b411",
+      "new_sha256": "23e08caa335f6cfddb9366ae4fb839fc06e8e021c92298f7bd191ee5eb82bf20",
+      "details": [
+        "Add a nonnegative --max-new-items option, with zero preserving the original unlimited behavior.",
+        "On a voluntary limit, atomically write a partial bank and return without attaching final global evidence.",
+        "Finalize and freeze evidence exactly as before only when all requested prompts are present."
+      ]
+    },
+    {
+      "file": "run_fcc_online_gate.sh",
+      "old_sha256": "b87933fa9df1aa63bc230f1022842672ff8b43b1ec07a07c09424cbb0ad649d4",
+      "new_sha256": "213deadc5e2c682c72c78eba444967e9f944df11cedce0e292edd6da2efa0044",
+      "details": [
+        "Request exactly one new prompt per guarded bank-worker invocation.",
+        "Release the CUDA admission guard after that atomic item, then re-enter normal admission.",
+        "Poll once per second for bank-construction gaps, below the unrelated queue's three-second admission grace.",
+        "Retain five-second polling and exclusive admission for training and evaluation."
+      ]
+    }
+  ],
+  "validation": [
+    "Amendment 018 was observed live with the semantic quality job, the FCE guard, and the FCE bank worker coexisting at 13210 MiB free.",
+    "Bank items 561 through 569 were written atomically while the unrelated 20000 MiB queue remained out.",
+    "The supervisor, guard, and bank worker were then stopped cleanly with a valid 569-item partial bank.",
+    "Python compilation, Bash syntax validation, the scheduler self-test, and CLI option exposure passed locally and remotely.",
+    "All 12 reward, control, exact-resume, and fail-closed audit regressions passed remotely.",
+    "Live one-item cycling was observed: item 570 completed, its worker and guard exited, a new guard and worker PID were admitted, and item 571 completed."
+  ],
+  "claim_boundary": "This change controls only resource fairness and partial-write cadence. It changes no generated panel for a given prompt and seed, computes no reward, reads no gold label, and performs no policy update.",
+  "frozen_unchanged": [
+    "method",
+    "existing bank contents",
+    "models",
+    "sampling seeds",
+    "training hyperparameters",
+    "reward sources",
+    "checkpoint semantics",
+    "evaluation",
+    "statistical gates"
+  ],
+  "scope": "Pre-training, pre-outcome resource-coordination correction at a valid atomic 569-item boundary. No PGR worker or checkpoint write was active when the replacement was prepared."
+}

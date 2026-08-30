@@ -1,0 +1,17 @@
+{
+  "addendum_id": "FCE-2026-07-30-GENERATION-BATCH-001",
+  "status": "sealed before any MATH-Hard, MMLU, Qwen train-bank, or new policy outcome was inspected",
+  "reason": "Each reference panel contains 12 samples. Batch size 8 split a panel into generation calls of 8 and 4; batch size 12 samples the same panel distribution and seed in one call.",
+  "change": {
+    "old_generation_batch_size": 8,
+    "new_generation_batch_size": 12,
+    "panel_size": 12,
+    "candidate_panel_size": 4,
+    "sampling_temperature": 0.7,
+    "top_p": 0.95,
+    "max_completion_tokens": 384,
+    "panel_seed_derivation": "unchanged"
+  },
+  "restart_rule": "Archive the partial batch-8 MATH-Hard bank and restart it from zero. Never combine batch-8 and batch-12 items in one confirmatory bank.",
+  "claim_boundary": "This is an execution-throughput amendment, not a change to the reward, task, model, prompts, sampling distribution, seeds, evaluation slice, or success gates."
+}

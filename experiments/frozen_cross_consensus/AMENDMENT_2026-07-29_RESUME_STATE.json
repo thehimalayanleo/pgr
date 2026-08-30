@@ -1,0 +1,57 @@
+{
+  "amendment_id": "FCE-2026-07-29-RESUME-STATE-003",
+  "timestamp": "2026-07-29T09:56:19-07:00",
+  "status_at_amendment": {
+    "smollm_selection_complete": true,
+    "qwen_bank_items": 185,
+    "qwen_bank_partial": true,
+    "qwen_selection_results_created": false,
+    "online_train_bank_created": false,
+    "online_training_started": false,
+    "online_heldout_results_created": false
+  },
+  "reason": "A pre-online source audit showed that Transformers 4.46.2 suppresses both scheduler and RNG serialization when save_only_model=true. Model-only resume therefore preserved weights and global_step but silently restarted the linear learning-rate schedule and did not restore the seed-42 sampling stream. Adam moments were already intentionally omitted to avoid the measured host-RAM serialization failure.",
+  "changes": [
+    {
+      "file": "local_fcc_train.py",
+      "old_sha256": "2e84e326e63d4adfc305ff96997ee11b1d346335215803f092a066f9a388ea6e",
+      "new_sha256": "11e3b1e4737b6ae237165a53867a01ae5635ee43f27337b342601dc6712dfab0",
+      "details": [
+        "atomically save and restore the small scheduler state and synchronize the fresh optimizer to the restored current learning rate",
+        "atomically save the Trainer RNG state so resumed rollout sampling continues the seeded stream",
+        "write a completion manifest that explicitly records the unavoidable Adam-moment reset",
+        "retain two model-only checkpoints so an interrupted serialization cannot erase the previous certified resume point"
+      ]
+    },
+    {
+      "file": "run_fcc_online_gate.sh",
+      "old_sha256": "5f2a4c3f7df97ed883accde4edda80bd8290c3ce23efe274ac02f3e3006d2bba",
+      "new_sha256": "617d292c3432a5ff05888b7e1070c1f810a892c36df89c3db1ff86f6995b9888",
+      "details": [
+        "resume only from checkpoints whose model, trainer state, scheduler, RNG, and lightweight completion manifest agree on global_step",
+        "retain two model-only checkpoints for crash-safe rotation"
+      ]
+    }
+  ],
+  "frozen_unchanged": [
+    "method",
+    "models",
+    "datasets_and_splits",
+    "panel_size",
+    "candidate_size",
+    "seed",
+    "decoding",
+    "reward_construction",
+    "selection_metrics",
+    "viability_thresholds",
+    "training_steps",
+    "learning_rate",
+    "learning_rate_scheduler",
+    "number_of_generations",
+    "heldout_examples",
+    "bootstrap_draws",
+    "gold_separation",
+    "optimizer_moment_reset_on_model_only_resume"
+  ],
+  "scope": "Pre-outcome operational resume correction. It cannot change a selection rollout, reward, model update before an interruption, evaluation prediction, or statistical decision. It preserves the originally intended scheduler position and seeded RNG stream after interruption; Adam moments remain explicitly reset because full optimizer serialization is the measured OOM failure mode."
+}

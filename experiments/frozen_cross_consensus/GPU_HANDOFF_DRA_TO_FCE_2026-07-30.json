@@ -1,0 +1,13 @@
+{
+  "handoff": "DRA to FCE",
+  "source_thread_id": "019fa8c3-6399-7850-8959-b97bc5df7c94",
+  "received_at_local_date": "2026-07-30",
+  "dra_safe_boundary": {
+    "four_example_8k_task_local_replay_layer_updates": 112,
+    "cpu_fail_closed_selection_audit_checks_passed": "47/47",
+    "behavioral_confirmation": false,
+    "dra_cuda_process_exited": true
+  },
+  "reservation_scope": "preregistered FCE seed, Qwen, domain, gold, and majority queue",
+  "return_condition": "FCE must explicitly release the 5090 before DRA launches further CUDA work."
+}

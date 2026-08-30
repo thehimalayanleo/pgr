@@ -1,0 +1,19 @@
+{
+  "addendum_id": "FCE-2026-07-30-CHOICE-001",
+  "status": "sealed before MMLU bank generation or outcome inspection",
+  "applies_to": "cais/mmlu answer_mode=choice only",
+  "unchanged_components": [
+    "two independently sampled frozen panels",
+    "geometric cross-panel support",
+    "lexical independent-path filter",
+    "gold-free bank construction",
+    "independent candidate panel",
+    "all preregistered selection and training gates"
+  ],
+  "adaptation": {
+    "numeric_and_math": "score = geometric cross-panel support times normalized cross-prompt IDF",
+    "fixed_choice_vocabulary": "score = geometric cross-panel support",
+    "reason": "A-D are deliberately reused for every prompt, so cross-prompt letter rarity measures answer position rather than generic-answer collapse."
+  },
+  "claim_boundary": "Choice-mode evidence remains verifier-free but is a task-adapted FCE variant; it is not numerically identical to the open-answer formula."
+}

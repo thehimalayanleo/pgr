@@ -1,0 +1,35 @@
+{
+  "amendment_id": "FCE-2026-07-29-ANY-CUDA-FOREIGN-013",
+  "timestamp": "2026-07-29T14:40:26-07:00",
+  "status_at_amendment": {
+    "online_train_bank_items": 520,
+    "online_train_bank_partial": true,
+    "primary_online_training_started": false,
+    "primary_online_result_created": false,
+    "matched_control_training_started": false
+  },
+  "reason": "Live observation showed semantic's actual wall-clock runner initially resident at approximately 712 MiB, below PGR's old 4 GiB foreign-process threshold. PGR could therefore launch during the runner's initialization and contaminate both jobs before memory grew past the threshold.",
+  "change": {
+    "file": "run_fcc_online_gate.sh",
+    "old_sha256": "ae81ac637b2af571f772d308a335ebb97ffde542e7ef4d600a459c5058daee37",
+    "new_sha256": "0257d695140b4979afdfd6fda7ece2e286506c2259eabccef53e2d293e618654",
+    "details": "Treat every CUDA compute PID as foreign from its first allocation unless it is PGR's exact active child or the exact sleeping semantic cooperative reservation."
+  },
+  "safety": [
+    "The semantic measurement runner blocks PGR even while it is still small.",
+    "The cooperative reservation remains the only non-PGR exception.",
+    "Manual and queued foreign jobs are never co-run intentionally.",
+    "The active-child five-second monitor uses the same fail-closed rule."
+  ],
+  "frozen_unchanged": [
+    "method",
+    "bank",
+    "models",
+    "training hyperparameters",
+    "reward sources",
+    "checkpoint semantics",
+    "evaluation",
+    "statistical gates"
+  ],
+  "scope": "Pre-outcome contamination-race correction."
+}

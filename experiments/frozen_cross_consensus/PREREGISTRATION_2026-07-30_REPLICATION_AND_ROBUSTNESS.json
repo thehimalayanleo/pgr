@@ -1,0 +1,130 @@
+{
+  "preregistration_id": "FCE-2026-07-30-REPLICATION-001",
+  "created_at_local": "2026-07-30T10:04:52-07:00",
+  "status": "sealed before any new replication, task-transfer, or robustness outcome",
+  "known_before_sealing": {
+    "smollm_seed42_base_accuracy": 0.296,
+    "smollm_seed42_fce_accuracy": 0.514,
+    "smollm_seed42_permuted_control_accuracy": 0.336,
+    "smollm_and_qwen_candidate_selection_results": "already observed and retained as prior evidence",
+    "fixed_source_gold_random_majority_results": "already observed but not treated as matched confirmatory baselines"
+  },
+  "shared_invariants": {
+    "panel_size_each": 12,
+    "num_generations": 4,
+    "max_steps": 1000,
+    "learning_rate": 2e-05,
+    "max_completion_tokens": 384,
+    "step_advantage_mode": "group_mean",
+    "terminal_spread": "constant",
+    "alpha": 0,
+    "gold_in_fce_training": false,
+    "separate_verifier_or_reward_model": false,
+    "fce_and_permuted_control_must_use_the_same_frozen_bank": true,
+    "permuted_control_preserves_every_group_reward_multiset": true,
+    "evaluation_decoding": "deterministic greedy",
+    "resume_policy": "only an uninterrupted step-0 run is confirmatory; any interrupted run is archived without heldout evaluation"
+  },
+  "experiments": [
+    {
+      "id": "smollm_multiseed",
+      "model": "HuggingFaceTB/SmolLM2-1.7B-Instruct",
+      "dataset": "openai/gsm8k",
+      "frozen_bank": "reuse sealed seed-20260729 train[:1000] bank",
+      "new_training_seeds": [43, 44, 45, 46],
+      "arms_per_seed": ["fce", "fce_permuted"],
+      "evaluation": "test[500:1000]",
+      "primary_estimand": "mean paired FCE-minus-permuted accuracy over new training seeds",
+      "success_gate": {
+        "at_least_three_of_four_seed_differences_positive": true,
+        "mean_difference_at_least": 0.05,
+        "hierarchical_seed-and-prompt_bootstrap_ci95_lower_bound_gt_zero": true
+      }
+    },
+    {
+      "id": "qwen_full_policy_replication",
+      "model": "Qwen/Qwen2.5-1.5B-Instruct",
+      "dataset": "openai/gsm8k",
+      "bank": "new gold-free train[:1000] two-panel bank",
+      "training_seed": 42,
+      "arms": ["base", "fce", "fce_permuted"],
+      "evaluation": "test[500:1000]",
+      "success_gate": {
+        "fce_minus_base_at_least": 0.03,
+        "fce_minus_permuted_gt_zero": true,
+        "paired_prompt_bootstrap_p_lt": 0.05
+      }
+    },
+    {
+      "id": "matched_baselines",
+      "model": "HuggingFaceTB/SmolLM2-1.7B-Instruct",
+      "dataset": "openai/gsm8k",
+      "training_seed": 42,
+      "arms": ["gold", "majority"],
+      "evaluation": "test[500:1000]",
+      "role": {
+        "gold": "supervised-verifier upper comparator, not a verifier-free gate",
+        "majority": "on-policy self-consistency verifier-free baseline"
+      },
+      "matching": "clean step-0 run with the same optimizer, K, steps, learning rate, completion cap, and evaluation prompts as FCE",
+      "success_gate": {
+        "fce_minus_majority_gt_zero": true,
+        "paired_prompt_bootstrap_p_lt": 0.05
+      }
+    },
+    {
+      "id": "math_hard_transfer",
+      "model": "Qwen/Qwen2.5-1.5B-Instruct",
+      "dataset": "lighteval/MATH-Hard",
+      "answer_mode": "boxed_math_surface_canonicalization",
+      "selection": "test[:500] with two reference panels and one independent K=4 candidate panel",
+      "training": "train[:1000] only if the selection gate passes",
+      "evaluation": "test[500:1000]",
+      "selection_gate": {
+        "oracle_gain_capture_at_least": 0.7,
+        "paired_prompt_bootstrap_p_lt": 0.05,
+        "informative_group_rate_at_least": 0.3
+      },
+      "training_gate": "same base and matched-permutation gates as qwen_full_policy_replication"
+    },
+    {
+      "id": "mmlu_nonnumeric_transfer",
+      "model": "Qwen/Qwen2.5-1.5B-Instruct",
+      "dataset": "cais/mmlu",
+      "answer_mode": "choice_letter",
+      "selection": "test[:500] with two reference panels and one independent K=4 candidate panel",
+      "training": "auxiliary_train[:1000] only if the selection gate passes",
+      "evaluation": "test[500:1000]",
+      "selection_gate": {
+        "oracle_gain_capture_at_least": 0.7,
+        "paired_prompt_bootstrap_p_lt": 0.05,
+        "informative_group_rate_at_least": 0.3
+      },
+      "training_gate": "same base and matched-permutation gates as qwen_full_policy_replication"
+    }
+  ],
+  "systematic_wrong_consensus": {
+    "development_bank": "existing SmolLM2 selection bank",
+    "locked_replication_bank": "existing Qwen selection bank",
+    "safeguards_compared": [
+      "baseline_fce",
+      "minimum_two_occurrences_in_each_panel",
+      "minimum_three_independent_paths_total",
+      "cross_panel_support_times_panel_margin",
+      "cross_panel_support_times_one_minus_normalized_panel_entropy"
+    ],
+    "replication_success_gate": {
+      "wrong_given_reinforcement_relative_reduction_at_least": 0.25,
+      "retain_at_least_fraction_of_baseline_selection_gain": 0.8,
+      "informative_group_rate_at_least": 0.3
+    },
+    "impossibility_boundary": "If the frozen policy produces the same wrong answer with high support and diverse wording across every panel, self-consistency alone contains no information that distinguishes it from a correct answer. Such cases must be measured and reported, not relabeled as solved."
+  },
+  "reporting": {
+    "all_started_arms_reported": true,
+    "failed_or_interrupted_attempts_archived": true,
+    "prompt_bootstrap_not_misreported_as_training_seed_uncertainty": true,
+    "selection_only_not_misreported_as_policy_learning": true,
+    "dense_trajectory_credit_not_misreported_as_step_local_credit": true
+  }
+}

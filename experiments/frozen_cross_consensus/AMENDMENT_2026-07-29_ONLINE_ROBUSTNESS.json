@@ -1,0 +1,54 @@
+{
+  "amendment_id": "FCE-2026-07-29-ONLINE-ROBUSTNESS-002",
+  "timestamp": "2026-07-29T08:27:43-07:00",
+  "status_at_amendment": {
+    "smollm_selection_complete": true,
+    "smollm_selection_outcomes_inspected": true,
+    "qwen_bank_items": 35,
+    "qwen_bank_partial": true,
+    "qwen_selection_results_created": false,
+    "online_train_bank_created": false,
+    "online_training_started": false,
+    "online_heldout_results_created": false
+  },
+  "reason": "The shared-GPU online runner retained hard retry ceilings of 30 for train-bank generation, 10 for evaluation, and 20 for training even though expected voluntary preemptions already exceeded 30 during the sealed Smol selection bank. It also accepted any nonempty evaluation file or existing final directory, which could misclassify a process killed during serialization as complete.",
+  "changes": [
+    {
+      "file": "run_fcc_online_gate.sh",
+      "old_sha256": "8d0ed69a2d7b8b71bbe731e078fb63524c0e2352f1413f37e0e2d51a26d18440",
+      "new_sha256": "5f2a4c3f7df97ed883accde4edda80bd8290c3ce23efe274ac02f3e3006d2bba",
+      "details": [
+        "raise train-bank, evaluation, and training retry ceilings to 1000",
+        "validate evaluation JSON metadata, 500 unique paired records, and checkpoint identity before accepting it",
+        "require config, tokenizer artifacts, and nonempty model weights before accepting the final checkpoint directory"
+      ]
+    },
+    {
+      "file": "evaluate_fcc_online.py",
+      "old_sha256": "f8b3c8fd47c0255049fd1eddae20f7da6c7855da38fd1f45d761a3cb554d7593",
+      "new_sha256": "9ac7d34fc4317bc6d0ebc5269da1671a7f9ad351ba74b78dba4617932f4c8790",
+      "details": [
+        "write evaluation JSON atomically through a .tmp file followed by replace"
+      ]
+    }
+  ],
+  "frozen_unchanged": [
+    "method",
+    "models",
+    "datasets_and_splits",
+    "panel_size",
+    "candidate_size",
+    "seed",
+    "decoding",
+    "reward_construction",
+    "selection_metrics",
+    "viability_thresholds",
+    "training_steps",
+    "learning_rate",
+    "number_of_generations",
+    "heldout_examples",
+    "bootstrap_draws",
+    "gold_separation"
+  ],
+  "scope": "Operational retry and artifact-integrity handling only. The amendment cannot change a generated rollout, reward, model update, evaluation prediction, or statistical decision."
+}

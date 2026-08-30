@@ -1,0 +1,54 @@
+{
+  "amendment_id": "FCE-2026-07-29-023",
+  "created_at_local": "2026-07-29T23:20:00-07:00",
+  "scope": "matched-control execution recovery only",
+  "trigger": {
+    "attempt": "second clean step-zero matched-control attempt",
+    "reservation": "4096 MiB PGR control admission reservation was active",
+    "interruption_at_local": "2026-07-29T23:13:21-07:00",
+    "live_step": 25,
+    "cause": "an ad-hoc SSH-launched qwen_multilayer_checkpoint_confirm.py process allocated CUDA outside the fixed-source queue controlled by the reservation",
+    "training_archive": "/home/ajinkya/pgr/checkpoints/fce_control_trajectory_fce_permuted_seed42_steps1000_k4_INTERRUPTED_ADHOC_ARCHIVE_20260729_2313",
+    "log_archive": "/home/ajinkya/pgr/logs/fce_matched_control_train_INTERRUPTED_ADHOC_ARCHIVE_20260729_2313.log",
+    "invocation_archive": "/home/ajinkya/pgr/checkpoints/fce_control_live_invocation_INTERRUPTED_ADHOC_ARCHIVE_20260729_2313.json",
+    "checkpoint_written": false,
+    "heldout_evaluation_performed": false,
+    "use_for_attribution": false
+  },
+  "allowed_recovery": {
+    "resume_checkpoint": "/home/ajinkya/pgr/checkpoints/fce_control_trajectory_fce_permuted_seed42_steps1000_k4_INTERRUPTED_ARCHIVE_20260729_2258/checkpoint-200",
+    "resume_global_step": 200,
+    "accepted_prompts": 895,
+    "gradient_accumulation_steps": 4,
+    "transformers_floor_updates_per_epoch": 223,
+    "batches_skipped_by_generic_resume": 800,
+    "batches_consumed_by_uninterrupted_run": 800,
+    "preboundary_skip_is_exact": true,
+    "reason": "checkpoint 200 precedes the first floor-based 223-update epoch boundary, so dataloader position is identical under uninterrupted execution and generic resume"
+  },
+  "mandatory_replay_gate": {
+    "reference_checkpoint": "/home/ajinkya/pgr/checkpoints/fce_control_trajectory_fce_permuted_seed42_steps1000_k4_INTERRUPTED_ARCHIVE_20260729_2258/checkpoint-250",
+    "candidate_checkpoint": "/home/ajinkya/pgr/checkpoints/fce_control_trajectory_fce_permuted_seed42_steps1000_k4/checkpoint-250",
+    "must_match_exactly": [
+      "complete trainer state and log history",
+      "model weights",
+      "linear scheduler state",
+      "RNG state",
+      "all streamed optimizer state files",
+      "immutable training and tokenizer metadata"
+    ],
+    "failure_action": "invalidate the resumed control, perform no heldout evaluation, and make no attribution claim",
+    "pass_action": "allow the same uninterrupted resumed process to continue; do not resume from checkpoint 250"
+  },
+  "unchanged": [
+    "frozen FCE bank",
+    "uniform within-group reward permutation",
+    "base model",
+    "seed",
+    "training schedule",
+    "heldout evaluation set",
+    "paired attribution gate",
+    "unconditional-control requirement"
+  ],
+  "claim_boundary": "This amendment restores the already-started preregistered seed-42 control trajectory; it does not add, remove, tune, or inspect any heldout outcome."
+}

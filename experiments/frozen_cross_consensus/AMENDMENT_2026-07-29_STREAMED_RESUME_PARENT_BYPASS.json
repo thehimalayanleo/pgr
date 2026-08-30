@@ -1,0 +1,47 @@
+{
+  "amendment_id": "FCE-2026-07-29-STREAMED-RESUME-PARENT-BYPASS-020",
+  "timestamp": "2026-07-29T20:54:00-07:00",
+  "status_at_amendment": {
+    "online_train_bank_items": 1000,
+    "online_train_bank_audit_passed": true,
+    "primary_online_training_steps": 1000,
+    "primary_online_result_created": true,
+    "primary_trained_minus_base": 0.218,
+    "matched_control_last_live_step_before_yield": 635,
+    "matched_control_latest_certified_checkpoint": 600,
+    "matched_control_result_created": false
+  },
+  "reason": "The matched control safely yielded to unrelated GPU work after live step 635. Its first real resume from the certified step-600 checkpoint failed because the override called the Transformers parent optimizer loader first. With save_only_model=true, no monolithic optimizer.pt exists by design; the exact optimizer is stored in the certified streamed-per-parameter directory.",
+  "change": {
+    "file": "local_fcc_train.py",
+    "old_sha256": "d9676cea27710ddafd8988e202c8b7be3bfe341c72a3a6a3e1f7e38e136f8698",
+    "new_runtime_sha256": "619981e3a5b19bcd646bd41dded2212edaad1742a2f488064f69fe9c34d882c5",
+    "details": [
+      "For certified save_only_model checkpoints, bypass the parent monolithic optimizer loader and validate the FCE exact-resume manifest first.",
+      "Load the streamed optimizer, scheduler, and RNG state already written by the preregistered checkpoint format.",
+      "Continue delegating to the parent loader for every non-streamed or non-save_only_model path.",
+      "Do not reset optimizer state and do not continue from the uncertified live step 635; resume exactly from certified step 600."
+    ]
+  },
+  "validation": [
+    "The step-600 control checkpoint contains trainer_state.json, scheduler.pt, RNG state, the streamed optimizer metadata, all parameter-state files, and a valid exact-resume manifest.",
+    "The focused resume regression now makes the fake parent loader raise, so the previous ordering bug is directly covered.",
+    "The strengthened regression passed remotely and still proved bit-identical next-parameter and scheduler updates against uninterrupted Adam.",
+    "Python compilation passed locally and remotely.",
+    "The complete pre-hotfix executed source set was archived under checkpoints/fce_executed_source_20260729 before replacement.",
+    "The live control loaded checkpoint 600 with the hotfix and entered optimizer step 601 without requesting optimizer.pt."
+  ],
+  "claim_boundary": "The primary model and its already completed held-out result are unchanged. The control has no held-out evaluation or result at this amendment. Steps 601 through 635 were not checkpointed and are discarded; certified optimizer, scheduler, and RNG state at step 600 define the resumed trajectory.",
+  "frozen_unchanged": [
+    "method",
+    "bank",
+    "models",
+    "sampling seed",
+    "training hyperparameters",
+    "reward sources",
+    "reward permutation",
+    "evaluation",
+    "statistical gates"
+  ],
+  "scope": "Necessary pre-control-outcome exact-resume correction. No control worker was active when the replacement was validated."
+}

@@ -1,0 +1,552 @@
+{
+  "method": "Frozen Cross-Evidence GRPO",
+  "audit_version": 1,
+  "bank": {
+    "sha256": "273bcf44f2ff86356f41ffeee2276898cae0c2aacdab6b8dcd4488a8d23a134f",
+    "items": 1000,
+    "accepted_evidence_prompts": 895,
+    "accepted_fraction": 0.895,
+    "unique_ordered_prompt_hashes": true,
+    "panels_exactly_12_each": true,
+    "candidates_absent": true,
+    "gold_stored": false,
+    "frozen_evidence_recomputed_exactly": true,
+    "normalized_train_heldout_overlap": 0,
+    "exact_train_heldout_overlap": 0
+  },
+  "primary_training": {
+    "checkpoint": "/home/ajinkya/pgr/checkpoints/fce_online_trajectory_fce_seed42_steps1000_k4/checkpoint-1000",
+    "global_step": 1000,
+    "history_records": 200,
+    "training_arguments": {
+      "max_steps": 1000,
+      "num_generations": 4,
+      "max_completion_length": 384,
+      "learning_rate": 2e-05,
+      "per_device_train_batch_size": 1,
+      "gradient_accumulation_steps": 4,
+      "warmup_steps": 5,
+      "seed": 42,
+      "save_steps": 50,
+      "save_total_limit": 2,
+      "bf16": true
+    },
+    "mean_advantage_token_coverage": 0.6130000000000004,
+    "max_within_rollout_advantage_variance": 2.887273753415798e-15,
+    "exact_resume_manifest": {
+      "format": "fce-streamed-exact-resume-v2",
+      "global_step": 1000,
+      "scheduler_state_saved": true,
+      "rng_state_saved": true,
+      "optimizer_state_saved": true,
+      "optimizer_state_format": "streamed-per-parameter-v1",
+      "optimizer_state_dir": "optimizer-stream-0qj87342",
+      "optimizer_parameter_count": 218,
+      "optimizer_reset_on_resume": false
+    },
+    "final_weight": {
+      "path": "/home/ajinkya/pgr/checkpoints/fce_online_trajectory_fce_seed42_steps1000_k4_final/model.safetensors",
+      "bytes": 3422777952,
+      "sha256": "0c15edc9456f89dc9f1fc15bd2ea0f0b06a1954350a90a80203e7bda757b3608",
+      "equals_checkpoint_1000": true
+    }
+  },
+  "control_training": {
+    "checkpoint": "/home/ajinkya/pgr/checkpoints/fce_control_trajectory_fce_permuted_seed42_steps1000_k4/checkpoint-1000",
+    "global_step": 1000,
+    "history_records": 200,
+    "training_arguments": {
+      "max_steps": 1000,
+      "num_generations": 4,
+      "max_completion_length": 384,
+      "learning_rate": 2e-05,
+      "per_device_train_batch_size": 1,
+      "gradient_accumulation_steps": 4,
+      "warmup_steps": 5,
+      "seed": 42,
+      "save_steps": 50,
+      "save_total_limit": 2,
+      "bf16": true
+    },
+    "mean_advantage_token_coverage": 0.6404999999999998,
+    "max_within_rollout_advantage_variance": 2.4868995751603505e-15,
+    "exact_resume_manifest": {
+      "format": "fce-streamed-exact-resume-v2",
+      "global_step": 1000,
+      "scheduler_state_saved": true,
+      "rng_state_saved": true,
+      "optimizer_state_saved": true,
+      "optimizer_state_format": "streamed-per-parameter-v1",
+      "optimizer_state_dir": "optimizer-stream-89iw7ube",
+      "optimizer_parameter_count": 218,
+      "optimizer_reset_on_resume": false
+    },
+    "final_weight": {
+      "path": "/home/ajinkya/pgr/checkpoints/fce_control_trajectory_fce_permuted_seed42_steps1000_k4_final/model.safetensors",
+      "bytes": 3422777952,
+      "sha256": "42e60c3230dbc2b46699a97f160ee922156ad7d57f8548fcf208ea81e78efc71",
+      "equals_checkpoint_1000": true
+    }
+  },
+  "primary_training_log": {
+    "path": "/home/ajinkya/pgr/logs/fcc_online_train.log",
+    "sha256": "b35575b963e9aa9b32831dfab3b72ce86729e9c46b2149c3115d67178f0bc3d4",
+    "one_clean_start": true,
+    "one_launch_attempt": true,
+    "resume_event_absent": true,
+    "allowed_resume_event": null,
+    "required_one_time_markers": []
+  },
+  "control_training_log": {
+    "path": "/home/ajinkya/pgr/logs/fce_matched_control_train.log",
+    "sha256": "a4f25e534660264c08a60dfd187c3384f20d25764ba24e594e3cec42d25542bb",
+    "one_clean_start": true,
+    "one_launch_attempt": true,
+    "resume_event_absent": true,
+    "allowed_resume_event": null,
+    "required_one_time_markers": [
+      "PGR control reservation ready 6144 MiB",
+      "PGR control reservation quiescent 60 seconds"
+    ]
+  },
+  "control_live_invocation": {
+    "capture_version": 1,
+    "captured_at_utc": "2026-07-30T08:25:17.638516+00:00",
+    "pid": 3706717,
+    "ppid": 3704187,
+    "argv": [
+      "/home/ajinkya/miniconda3/envs/pgr/bin/python",
+      "-u",
+      "/home/ajinkya/pgr/experiments/frozen_cross_consensus/local_fcc_train.py",
+      "--max-steps",
+      "1000",
+      "--seed",
+      "42",
+      "--k",
+      "4",
+      "--dataset",
+      "openai/gsm8k",
+      "--model",
+      "HuggingFaceTB/SmolLM2-1.7B-Instruct",
+      "--max-completion",
+      "384",
+      "--lr",
+      "2e-5",
+      "--output-suffix",
+      "fce_control",
+      "--save-steps",
+      "50",
+      "--save-total-limit",
+      "2",
+      "--alpha",
+      "0",
+      "--step-advantage-mode",
+      "group_mean",
+      "--terminal-spread",
+      "constant",
+      "--reward-source",
+      "fce_permuted",
+      "--fcc-bank",
+      "/home/ajinkya/pgr/checkpoints/fcc_smollm_train_n1000_p12.json"
+    ],
+    "observed_flags": {
+      "--max-steps": "1000",
+      "--seed": "42",
+      "--k": "4",
+      "--dataset": "openai/gsm8k",
+      "--model": "HuggingFaceTB/SmolLM2-1.7B-Instruct",
+      "--max-completion": "384",
+      "--lr": "2e-5",
+      "--output-suffix": "fce_control",
+      "--save-steps": "50",
+      "--save-total-limit": "2",
+      "--alpha": "0",
+      "--step-advantage-mode": "group_mean",
+      "--terminal-spread": "constant",
+      "--reward-source": "fce_permuted",
+      "--fcc-bank": "/home/ajinkya/pgr/checkpoints/fcc_smollm_train_n1000_p12.json"
+    },
+    "expected_flags": {
+      "--max-steps": "1000",
+      "--seed": "42",
+      "--k": "4",
+      "--dataset": "openai/gsm8k",
+      "--model": "HuggingFaceTB/SmolLM2-1.7B-Instruct",
+      "--max-completion": "384",
+      "--lr": "2e-5",
+      "--output-suffix": "fce_control",
+      "--save-steps": "50",
+      "--save-total-limit": "2",
+      "--alpha": "0",
+      "--step-advantage-mode": "group_mean",
+      "--terminal-spread": "constant",
+      "--reward-source": "fce_permuted",
+      "--fcc-bank": "/home/ajinkya/pgr/checkpoints/fcc_smollm_train_n1000_p12.json"
+    },
+    "resume_flag_absent": true,
+    "invocation_matches_preregistered_control": true,
+    "cwd": "/home/ajinkya/pgr",
+    "executable": "/home/ajinkya/miniconda3/envs/pgr/bin/python3.11",
+    "source_sha256": {
+      "local_fcc_train.py": "619981e3a5b19bcd646bd41dded2212edaad1742a2f488064f69fe9c34d882c5",
+      "fcc_step_pgr_trainer.py": "620e894de2f3f455dde2a9af14a10d24352bccc4f80844e97b821b15d2237fd8",
+      "fce_reward.py": "6ab3f52d909c32370a9145a44a90d78edd191aad56c168eaf97fca243c642d02"
+    },
+    "bank": {
+      "path": "/home/ajinkya/pgr/checkpoints/fcc_smollm_train_n1000_p12.json",
+      "bytes": 9802415,
+      "sha256": "273bcf44f2ff86356f41ffeee2276898cae0c2aacdab6b8dcd4488a8d23a134f"
+    },
+    "capture_path": "/home/ajinkya/pgr/checkpoints/fce_control_live_invocation.json",
+    "capture_sha256": "e2751f393beda03666a2c36c45dbdb0244256f82644171e5303fa421839aa233",
+    "capture_script_sha256": "d36210e0cff97c1ca1dc2c6392dfb64d112dbf65074170b556ea7212188d76c6"
+  },
+  "failed_control_preboundary_replay": {
+    "audit_version": 1,
+    "passed": false,
+    "reference_checkpoint": "/home/ajinkya/pgr/checkpoints/fce_control_trajectory_fce_permuted_seed42_steps1000_k4_INTERRUPTED_ARCHIVE_20260729_2258/checkpoint-250",
+    "candidate_checkpoint_archive": "/home/ajinkya/pgr/checkpoints/fce_control_trajectory_fce_permuted_seed42_steps1000_k4_REPLAY_FAILED_ARCHIVE_20260730_0109/checkpoint-250",
+    "trainer_state_equal": false,
+    "model_weight_equal": false,
+    "streamed_optimizer_equal": false,
+    "scheduler_equal": true,
+    "rng_state_equal": false,
+    "immutable_metadata_equal": false,
+    "errors": [
+      "trainer_state.json differs",
+      "model weight differs",
+      "RNG state differs",
+      "streamed optimizer state differs",
+      "immutable model or training metadata differs"
+    ],
+    "report_path": "/home/ajinkya/pgr/checkpoints/fce_control_preboundary_replay_audit_REPLAY_FAILED_ARCHIVE_20260730_0109.json",
+    "report_sha256": "a55b12142482d97cc656ef7f081ea3bd4ad6947ec4f458ef841cc32a49f4f009",
+    "auditor_path": "/home/ajinkya/pgr/checkpoints/fce_executed_source_20260729/audit_fce_preboundary_replay.py",
+    "auditor_sha256": "94ccb1639c8c9a6fb0f8d26c4902394caeeff737a6170805a098dd28b0609b45",
+    "heldout_evaluation_performed": false,
+    "use_for_attribution": false
+  },
+  "control_permutation_domain": {
+    "prompts": 895,
+    "global_steps": 1000,
+    "permutations_checked": 895000,
+    "identity_rate": 0.04165586592178771,
+    "expected_identity_rate": 0.041666666666666664,
+    "position_mapping_fractions": [
+      [
+        0.2500871508379888,
+        0.24981117318435755,
+        0.2509117318435754,
+        0.24918994413407822
+      ],
+      [
+        0.25029162011173184,
+        0.2504491620111732,
+        0.24968491620111732,
+        0.24957430167597766
+      ],
+      [
+        0.24940782122905028,
+        0.24981787709497208,
+        0.24994525139664805,
+        0.2508290502793296
+      ],
+      [
+        0.25021340782122903,
+        0.24992178770949722,
+        0.24945810055865922,
+        0.25040670391061454
+      ]
+    ],
+    "max_absolute_position_mapping_deviation": 0.0009117318435754029,
+    "reward_multiset_preserved_for_every_permutation": true,
+    "scope": "complete prompt-by-step domain, not realized dataloader order"
+  },
+  "rejected_interrupted_control": {
+    "checkpoint": "/home/ajinkya/pgr/checkpoints/fce_control_trajectory_fce_permuted_seed42_steps1000_k4_INTERRUPTED_ARCHIVE_20260729_2258/checkpoint-250",
+    "latest_certified_step": 250,
+    "live_step_before_yield": 268,
+    "reason": "foreign CUDA admission race",
+    "log": {
+      "path": "/home/ajinkya/pgr/logs/fce_matched_control_train_INTERRUPTED_ARCHIVE_20260729_2258.log",
+      "sha256": "edf6a3fe9656127c8bf71b8674afdf65ab76c966055b1fb3fe37e48d4f320e53"
+    },
+    "invocation": {
+      "path": "/home/ajinkya/pgr/checkpoints/fce_control_live_invocation_INTERRUPTED_ARCHIVE_20260729_2258.json",
+      "sha256": "a3c8fd6f9cabbf8783e6855b3c14d1e7e78023469aa968723f86c70431c98570"
+    },
+    "heldout_evaluation_performed": false,
+    "use_for_attribution": false
+  },
+  "rejected_adhoc_interrupted_control": {
+    "training_archive": "/home/ajinkya/pgr/checkpoints/fce_control_trajectory_fce_permuted_seed42_steps1000_k4_INTERRUPTED_ADHOC_ARCHIVE_20260729_2313",
+    "latest_live_step": 25,
+    "certified_checkpoint_written": false,
+    "reason": "foreign ad-hoc CUDA process",
+    "log": {
+      "path": "/home/ajinkya/pgr/logs/fce_matched_control_train_INTERRUPTED_ADHOC_ARCHIVE_20260729_2313.log",
+      "sha256": "3863f2debb7c12c854125f2850cfff56fc5dbbca8407f70d8ca6a732d952fb9b"
+    },
+    "invocation": {
+      "path": "/home/ajinkya/pgr/checkpoints/fce_control_live_invocation_INTERRUPTED_ADHOC_ARCHIVE_20260729_2313.json",
+      "sha256": "6e3b810cea4a07d24581e3651f343d020c8a4a5f85a0c1a422d22c2286c5c9d6"
+    },
+    "heldout_evaluation_performed": false,
+    "use_for_attribution": false
+  },
+  "rejected_startup_race_control": {
+    "training_archive": "/home/ajinkya/pgr/checkpoints/fce_control_trajectory_fce_permuted_seed42_steps1000_k4_STARTUP_RACE_ARCHIVE_20260730_0029",
+    "latest_live_step": 201,
+    "certified_checkpoint_written": false,
+    "reason": "direct Qwen CUDA startup race",
+    "foreign_process": {
+      "pid": 3688546,
+      "script": "qwen_ruler_histogram_eval.py",
+      "observed_cuda_memory_mib": 2664
+    },
+    "log": {
+      "path": "/home/ajinkya/pgr/logs/fce_matched_control_train_STARTUP_RACE_ARCHIVE_20260730_0029.log",
+      "sha256": "31fa96b02c128604ec8f09e4336d18505a62043d38bf95b52e2a8daea3b8e27c"
+    },
+    "invocation": {
+      "path": "/home/ajinkya/pgr/checkpoints/fce_control_live_invocation_STARTUP_RACE_ARCHIVE_20260730_0029.json",
+      "sha256": "546ac73a24f77b510f2f2fd48fcd2a35dc01c90283f64f96f35a4ef78050d572"
+    },
+    "supervisor_log": {
+      "path": "/home/ajinkya/pgr/logs/fce_gate_supervisor_STARTUP_RACE_ARCHIVE_20260730_0029.log",
+      "sha256": "c786a9d1607232351249eb13876bc5bc391b00574d98dadca530951c13833abf"
+    },
+    "heldout_evaluation_performed": false,
+    "use_for_attribution": false
+  },
+  "rejected_postquiescence_control": {
+    "training_archive": "/home/ajinkya/pgr/checkpoints/fce_control_trajectory_fce_permuted_seed42_steps1000_k4_POSTQUIET_FOREIGN_ARCHIVE_20260730_0059",
+    "latest_live_step": 205,
+    "certified_checkpoint_written": false,
+    "reason": "foreign CUDA launch after quiescent control admission",
+    "foreign_process": {
+      "observed_pid": 3698915,
+      "observed_cuda_memory_mib": 2494,
+      "owner": "active SAE/log-linear-attention Codex task"
+    },
+    "log": {
+      "path": "/home/ajinkya/pgr/logs/fce_matched_control_train_POSTQUIET_FOREIGN_ARCHIVE_20260730_0059.log",
+      "sha256": "c82615b0ede8245ccea01d75a2f257be2cf0cadd09d0ad60e6b800f03d11976e"
+    },
+    "invocation": {
+      "path": "/home/ajinkya/pgr/checkpoints/fce_control_live_invocation_POSTQUIET_FOREIGN_ARCHIVE_20260730_0059.json",
+      "sha256": "8c13e2e0d60cce925ca73426df8382255926ab265097b3b0ed7ba844076a7442"
+    },
+    "supervisor_log": {
+      "path": "/home/ajinkya/pgr/logs/fce_gate_supervisor_POSTQUIET_FOREIGN_ARCHIVE_20260730_0059.log",
+      "sha256": "1fa2566cec3d6d2a36b5c0ec7a2b5bbcfdfd68dbb4d8857e3836711e5534ff46"
+    },
+    "heldout_evaluation_performed": false,
+    "use_for_attribution": false
+  },
+  "rejected_precoord_relaunch": {
+    "training_archive": "/home/ajinkya/pgr/checkpoints/fce_control_trajectory_fce_permuted_seed42_steps1000_k4_PRECOORD_RELAUNCH_ARCHIVE_20260730_0101",
+    "trainer_process_reached_evidence_capture": false,
+    "checkpoint_written": false,
+    "reason": "foreign CUDA work was still active before coordination",
+    "log": {
+      "path": "/home/ajinkya/pgr/logs/fce_matched_control_train_PRECOORD_RELAUNCH_ARCHIVE_20260730_0101.log",
+      "sha256": "3b76acae1685eafdc4e12308a1a857ca7b31fe0dd102a013290859c8acd5bb85"
+    },
+    "supervisor_log": {
+      "path": "/home/ajinkya/pgr/logs/fce_gate_supervisor_PRECOORD_RELAUNCH_ARCHIVE_20260730_0101.log",
+      "sha256": "d4006e46e96b92caec251c27e764503837205adb5d64fdeedc818659d881e83e"
+    },
+    "heldout_evaluation_performed": false,
+    "use_for_attribution": false
+  },
+  "behavior_audit": {
+    "method": "Frozen Cross-Evidence GRPO behavior audit",
+    "audit_version": 1,
+    "descriptive_only": true,
+    "inputs": {
+      "base": {
+        "path": "checkpoints/fce_base_heldout500_greedy.json",
+        "sha256": "f5441a807d3185c5b54a5e65d52fdea2620854469b39e22903712237032a8c99"
+      },
+      "fce": {
+        "path": "checkpoints/fce_online_heldout500_greedy.json",
+        "sha256": "392ad7d563c3f741101f19fa8c78267acb77ecd6193af256aaa81e9ec2a40450"
+      },
+      "control": {
+        "path": "checkpoints/fce_permuted_heldout500_greedy.json",
+        "sha256": "42affbb198f673586b874a5d93e39de59422decad7fc3ff337c2794ab5e23fff"
+      }
+    },
+    "arms": {
+      "base": {
+        "checkpoint": "HuggingFaceTB/SmolLM2-1.7B-Instruct",
+        "n": 500,
+        "correct": 148,
+        "accuracy": 0.296,
+        "parseable": 341,
+        "parseable_rate": 0.682,
+        "nonempty": 341,
+        "nonempty_rate": 0.682,
+        "correct_given_parseable": 0.4340175953079179,
+        "mean_completion_characters": 322.544,
+        "median_completion_characters": 322.0,
+        "mean_completion_words": 64.106,
+        "median_completion_words": 65.0
+      },
+      "fce": {
+        "checkpoint": "/home/ajinkya/pgr/checkpoints/fce_online_trajectory_fce_seed42_steps1000_k4_final",
+        "n": 500,
+        "correct": 257,
+        "accuracy": 0.514,
+        "parseable": 500,
+        "parseable_rate": 1.0,
+        "nonempty": 500,
+        "nonempty_rate": 1.0,
+        "correct_given_parseable": 0.514,
+        "mean_completion_characters": 409.488,
+        "median_completion_characters": 369.0,
+        "mean_completion_words": 86.552,
+        "median_completion_words": 79.0
+      },
+      "control": {
+        "checkpoint": "/home/ajinkya/pgr/checkpoints/fce_control_trajectory_fce_permuted_seed42_steps1000_k4_final",
+        "n": 500,
+        "correct": 168,
+        "accuracy": 0.336,
+        "parseable": 393,
+        "parseable_rate": 0.786,
+        "nonempty": 393,
+        "nonempty_rate": 0.786,
+        "correct_given_parseable": 0.42748091603053434,
+        "mean_completion_characters": 375.19,
+        "median_completion_characters": 370.5,
+        "mean_completion_words": 71.466,
+        "median_completion_words": 70.0
+      }
+    },
+    "paired": {
+      "fce_vs_base": {
+        "left": "fce",
+        "right": "base",
+        "n": 500,
+        "both_correct": 125,
+        "left_only_correct": 132,
+        "right_only_correct": 23,
+        "both_wrong": 220,
+        "left_minus_right_accuracy": 0.218,
+        "left_parseable_rate": 1.0,
+        "right_parseable_rate": 0.682,
+        "left_minus_right_parseable_rate": 0.318,
+        "both_parseable": 341,
+        "left_accuracy_when_both_parseable": 0.5571847507331378,
+        "right_accuracy_when_both_parseable": 0.4340175953079179,
+        "right_correct_when_left_unparseable": 0
+      },
+      "fce_vs_control": {
+        "left": "fce",
+        "right": "control",
+        "n": 500,
+        "both_correct": 134,
+        "left_only_correct": 123,
+        "right_only_correct": 34,
+        "both_wrong": 209,
+        "left_minus_right_accuracy": 0.178,
+        "left_parseable_rate": 1.0,
+        "right_parseable_rate": 0.786,
+        "left_minus_right_parseable_rate": 0.214,
+        "both_parseable": 393,
+        "left_accuracy_when_both_parseable": 0.5318066157760815,
+        "right_accuracy_when_both_parseable": 0.42748091603053434,
+        "right_correct_when_left_unparseable": 0
+      },
+      "control_vs_base": {
+        "left": "control",
+        "right": "base",
+        "n": 500,
+        "both_correct": 103,
+        "left_only_correct": 65,
+        "right_only_correct": 45,
+        "both_wrong": 287,
+        "left_minus_right_accuracy": 0.04,
+        "left_parseable_rate": 0.786,
+        "right_parseable_rate": 0.682,
+        "left_minus_right_parseable_rate": 0.104,
+        "both_parseable": 318,
+        "left_accuracy_when_both_parseable": 0.4276729559748428,
+        "right_accuracy_when_both_parseable": 0.44025157232704404,
+        "right_correct_when_left_unparseable": 8
+      }
+    }
+  },
+  "paired_heldout_prompts": 500,
+  "primary_result": {
+    "method": "Frozen Cross-Evidence GRPO",
+    "n": 500,
+    "test_offset": 500,
+    "decoding": "greedy",
+    "base_accuracy": 0.296,
+    "trained_accuracy": 0.514,
+    "trained_minus_base": 0.218,
+    "gain_ci95": [
+      0.174,
+      0.262
+    ],
+    "p_gain_le_zero": 0.0,
+    "trained_only_correct": 132,
+    "base_only_correct": 23,
+    "viability_gate": {
+      "gain_at_least_minimum": true,
+      "minimum_gain": 0.03,
+      "paired_bootstrap_p_lt_0_05": true,
+      "passed": true
+    }
+  },
+  "matched_control_result": {
+    "method": "FCE versus trajectory-permuted FCE control",
+    "n": 500,
+    "test_offset": 500,
+    "decoding": "greedy",
+    "fce_accuracy": 0.514,
+    "permuted_control_accuracy": 0.336,
+    "fce_minus_control": 0.178,
+    "gain_ci95": [
+      0.132,
+      0.224
+    ],
+    "p_gain_le_zero": 0.0,
+    "fce_only_correct": 123,
+    "control_only_correct": 34,
+    "attribution_gate": {
+      "fce_better_than_control": true,
+      "paired_bootstrap_p_lt_0_05": true,
+      "passed": true
+    }
+  },
+  "source_provenance": {
+    "original_trainer_sha256": "d9676cea27710ddafd8988e202c8b7be3bfe341c72a3a6a3e1f7e38e136f8698",
+    "control_trainer_sha256": "619981e3a5b19bcd646bd41dded2212edaad1742a2f488064f69fe9c34d882c5",
+    "control_reservation_runner_sha256": "8f4f496a98e11f86e6387204450c977c9b0e0379132f19af066febd5cd2d2941",
+    "control_capture_script_sha256": "d36210e0cff97c1ca1dc2c6392dfb64d112dbf65074170b556ea7212188d76c6",
+    "control_replay_auditor_sha256": "94ccb1639c8c9a6fb0f8d26c4902394caeeff737a6170805a098dd28b0609b45",
+    "behavior_analysis_sha256": "f305d768ea3ddff0d22de4ebcda4c035425b3848dfaecce4020518c59f2d53b9",
+    "protocol_and_amendment_sha256": {
+      "PREREGISTRATION_2026-07-29.json": "f3ac802d4d1a05f9d264d58316ec54b01d81d4903481a726890d80d861b327b9",
+      "PREREGISTRATION_2026-07-29_MATCHED_CONTROL.json": "6d42fbd34a4bf4b2653d2ce6af87eac01a28baabfb18341554dc12f46e240173",
+      "AMENDMENT_2026-07-29_UNCONDITIONAL_CONTROL.json": "61e3e31f964c07b53b8b098160a308f14f9fdbd95862cbf054222a450cb8d062",
+      "AMENDMENT_2026-07-29_UNIFORM_SHUFFLE_CONTROL.json": "b06d95a055d7fb3f6fe484e0572827581084d58c889b2cb326038da88895ed63",
+      "AMENDMENT_2026-07-29_EXACT_OPTIMIZER_RESUME.json": "9aa30b2f66f913d4d54e20f14093c6ff60a183b1da7a7bc08c9c305da9a8f603",
+      "AMENDMENT_2026-07-29_STREAMED_RESUME_PARENT_BYPASS.json": "706f772c564dff676b781514b51f35fd12e6c2bc47a3e8f6ed273b2e186410d6",
+      "AMENDMENT_2026-07-29_FAIL_CLOSED_STOCHASTIC_RESUME.json": "93797735d43125b402b961326eee1f5f116c5b7a426fa396ed1dd7cc4b807b30",
+      "AMENDMENT_2026-07-29_CONTROL_RESERVATION.json": "165ceb47042ac7cf6bd75e2467ba8b3ae47212d4508bcb3814019efcb9f3854b",
+      "AMENDMENT_2026-07-29_PREBOUNDARY_REPLAY.json": "7179b7f2c61cf8d43efda3a132b5238c850827d8d925d60db82370faef49fa64",
+      "AMENDMENT_2026-07-30_STARTUP_QUIESCENCE.json": "85c503231d33e36a33d1666c9ec30055b7a5880065da5b54df6a879e30b38bfc",
+      "AMENDMENT_2026-07-30_SHARED_TASK_COORDINATION.json": "f97df41808a47046608e56c790a92b2079b2017bb544a54b3c218d8cd03aff5b",
+      "AMENDMENT_2026-07-30_CLEAN_CONTROL_ONLY.json": "8823695743b497f63a0e94255fa929b3e59d074a40fa2b553536ffab09d3397e"
+    },
+    "control_design_note": "The initial nonzero cyclic-shift control was replaced before either online arm began by the archived uniform-shuffle amendment; later resume and reservation amendments changed execution safety, not the reward transformation or attribution gate. The final 6 GiB reservation and 60-second quiescence gate close the observed simultaneous-start race; cross-task coordination prevents direct launches after admission without changing any experimental parameter. The checkpoint-200 recovery assumption was empirically rejected because its checkpoint-250 replay diverged in trainer state, model weights, optimizer state, RNG state, and immutable metadata. The only attribution-eligible control is therefore the final fresh uninterrupted step-0 run."
+  },
+  "integrity_audit_passed": true,
+  "viability_supported": true,
+  "decision": "supported: FCE-GRPO beats both base and matched permutation control"
+}

@@ -1,0 +1,42 @@
+{
+  "amendment_id": "FCE-2026-07-29-SHARED-QUALITY-BANK-GENERATION-017",
+  "timestamp": "2026-07-29T15:48:42-07:00",
+  "status_at_amendment": {
+    "online_train_bank_items": 557,
+    "online_train_bank_partial": true,
+    "primary_online_training_started": false,
+    "primary_online_result_created": false,
+    "matched_control_training_started": false
+  },
+  "reason": "The semantic post-wall-clock queue explicitly changed to shared_fixed_step_policy with wallclock_claimable=false and quality_claimable=true, then began a long sequence of fixed-step quality runs. Treating those declared-shareable queue children as exclusive would starve the gold-free bank for the entire remaining queue even when more than 24 GiB was free.",
+  "change": {
+    "file": "run_fcc_online_gate.sh",
+    "old_sha256": "e94dae1e208bc5a727e6eed6a1dae08ac55a54d46eed893fd6fa9b526c963f0b",
+    "new_sha256": "230499b92b6a47fc4455759cf97e803b672ca35d6c5d8756b24b5598f5d9c7e2",
+    "details": [
+      "Allow only gold-free bank generation to coexist with allowlisted fixed-step semantic quality scripts.",
+      "Require the semantic process to be a direct child of the exact run_remaining_after_wallclock.sh queue.",
+      "Keep the 24 GiB pre-admission threshold and yield if free VRAM falls below 16 GiB after admission.",
+      "Keep online training, base evaluation, trained evaluation, and matched-control training exclusive.",
+      "Continue treating every unrelated CUDA process and benchmark.runner as foreign."
+    ]
+  },
+  "validation": [
+    "bash syntax validation passed.",
+    "The scheduler self-test passed locally and remotely.",
+    "The live run_5090_semantic_dose_304m.py process and its exact queue parent matched the new ownership check.",
+    "The authoritative, staging, and remote runner hashes are identical."
+  ],
+  "claim_boundary": "Bank construction measures no wall-clock outcome. The semantic queue itself declares its fixed-step outputs quality-claimable under sharing. FCE training and evaluation remain non-shared.",
+  "frozen_unchanged": [
+    "method",
+    "existing bank contents",
+    "models",
+    "training hyperparameters",
+    "reward sources",
+    "checkpoint semantics",
+    "evaluation",
+    "statistical gates"
+  ],
+  "scope": "Pre-training, pre-outcome resource-coordination correction. No PGR worker or checkpoint write was active when the idle supervisor adopted the change."
+}
